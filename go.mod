@@ -5,7 +5,6 @@ go 1.23.2
 toolchain go1.23.8
 
 require (
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0
@@ -32,6 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/golang-lru v1.0.2
+	github.com/marek-veber/ARO-HCP/external v0.0.0-20250612112950-274f0b06235b
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
@@ -57,7 +57,7 @@ require (
 	k8s.io/component-base v0.32.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubectl v0.32.3
-	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
+	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
 	sigs.k8s.io/cloud-provider-azure v1.32.3
 	sigs.k8s.io/cluster-api v1.10.2
 	sigs.k8s.io/cluster-api/test v1.10.2
@@ -83,8 +83,6 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.9.24 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.6 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.4.1 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.3.2 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
