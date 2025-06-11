@@ -607,7 +607,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 	}
 	if feature.Gates.Enabled(feature.ARO) {
-		if err := (&infrav1controllersexp.AroClusterReconciler{
+		if err := (&infrav1controllersexp.AROClusterReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
@@ -615,7 +615,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		if err := (&infrav1controllersexp.AroControlPlaneReconciler{
+		if err := (&infrav1controllersexp.AROControlPlaneReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {

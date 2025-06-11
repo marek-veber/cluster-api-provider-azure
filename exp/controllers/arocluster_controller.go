@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -33,30 +33,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 )
 
-// AroClusterReconciler reconciles a AroCluster object.
-type AroClusterReconciler struct {
+// AROClusterReconciler reconciles a AroCluster object.
+type AROClusterReconciler struct {
 	client.Client
 	WatchFilterValue string
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AroClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *AROClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AroClusterReconciler.SetupWithManager",
-		tele.KVP("controller", infrav1exp.AROClusterKind),
+		"controllers.AROClusterReconciler.SetupWithManager",
+		tele.KVP("controller", infrav2exp.AROClusterKind),
 	)
 	defer done()
 
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1exp.AROCluster{}).
+		For(&infrav2exp.AROCluster{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(mgr.GetScheme(), log)).
 		// Watch clusters for pause/unpause notifications
 		Watches(
 			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
-				util.ClusterToInfrastructureMapFunc(ctx, infrav1exp.GroupVersion.WithKind(infrav1exp.AROClusterKind), mgr.GetClient(), &infrav1exp.AROCluster{}),
+				util.ClusterToInfrastructureMapFunc(ctx, infrav2exp.GroupVersion.WithKind(infrav2exp.AROClusterKind), mgr.GetClient(), &infrav2exp.AROCluster{}),
 			),
 			builder.WithPredicates(
 				predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue),
@@ -76,24 +76,24 @@ func (r *AroClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aroclusters/finalizers,verbs=update
 
 // Reconcile reconciles an AroCluster.
-func (r *AroClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, resultErr error) {
+func (r *AROClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, resultErr error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AroClusterReconciler.Reconcile",
+		"controllers.AROClusterReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", infrav1exp.AROClusterKind),
+		tele.KVP("kind", infrav2exp.AROClusterKind),
 	)
 	defer done()
 
 	log = log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	aroCluster := &infrav1exp.AROCluster{}
+	aroCluster := &infrav2exp.AROCluster{}
 	err := r.Get(ctx, req.NamespacedName, aroCluster)
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	err = fmt.Errorf("not implemented")
-	log.Error(err, fmt.Sprintf("Reconciling %s", infrav1exp.AROClusterKind))
+	log.Error(err, fmt.Sprintf("Reconciling %s", infrav2exp.AROClusterKind))
 	return ctrl.Result{}, err
 }

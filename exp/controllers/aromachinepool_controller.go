@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -39,13 +39,13 @@ type AroMachinePoolReconciler struct {
 func (r *AroMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	_, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AroMachinePoolReconciler.SetupWithManager",
-		tele.KVP("controller", infrav1exp.AROMachinePoolKind),
+		tele.KVP("controller", infrav2exp.AROMachinePoolKind),
 	)
 	defer done()
 
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1exp.AROMachinePool{}).
+		For(&infrav2exp.AROMachinePool{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
@@ -65,19 +65,19 @@ func (r *AroMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		"controllers.AroMachinePoolReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", infrav1exp.AROMachinePoolKind),
+		tele.KVP("kind", infrav2exp.AROMachinePoolKind),
 	)
 	defer done()
 
 	log = log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
-	aroMachinePool := &infrav1exp.AROMachinePool{}
+	aroMachinePool := &infrav2exp.AROMachinePool{}
 	err := r.Get(ctx, req.NamespacedName, aroMachinePool)
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	err = fmt.Errorf("not implemented")
-	log.Error(err, fmt.Sprintf("Reconciling %s", infrav1exp.AROMachinePoolKind))
+	log.Error(err, fmt.Sprintf("Reconciling %s", infrav2exp.AROMachinePoolKind))
 	return ctrl.Result{}, err
 }

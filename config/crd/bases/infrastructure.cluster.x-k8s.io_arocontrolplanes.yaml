@@ -195,8 +195,8 @@ spec:
                             description: ControlPlaneManagedIdentities "control-plane"
                               Microsoft.ManagedIdentity/userAssignedIdentities
                             type: string
-                          diskCsiDrivereManagedIdentities:
-                            description: DiskCsiDrivereManagedIdentities "disk-csi-driver"
+                          diskCsiDriverManagedIdentities:
+                            description: DiskCsiDriverManagedIdentities "disk-csi-driver"
                               Microsoft.ManagedIdentity/userAssignedIdentities
                             type: string
                           fileCsiDriverManagedIdentities:
@@ -222,8 +222,8 @@ spec:
                       dataPlaneOperators:
                         description: DataPlaneOperators ref to Microsoft.ManagedIdentity/userAssignedIdentities
                         properties:
-                          diskCsiDrivereManagedIdentities:
-                            description: DiskCsiDrivereManagedIdentities "disk-csi-driver"
+                          diskCsiDriverManagedIdentities:
+                            description: DiskCsiDriverManagedIdentities "disk-csi-driver"
                               Microsoft.ManagedIdentity/userAssignedIdentities
                             type: string
                           fileCsiDriverManagedIdentities:
@@ -260,6 +260,13 @@ spec:
                       and cannot be set with Subnet.
                     type: string
                 type: object
+              resources:
+                description: Resources are embedded ARO resources to be managed by
+                  this resource.
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                type: array
               version:
                 description: OpenShift semantic version, for example "4.14.5".
                 type: string
@@ -354,6 +361,22 @@ spec:
               consoleURL:
                 description: ConsoleURL is the url for the openshift console.
                 type: string
+              controlPlaneEndpoint:
+                description: ControlPlaneEndpoint represents the endpoint for the
+                  cluster's API server.
+                properties:
+                  host:
+                    description: host is the hostname on which the API server is serving.
+                    maxLength: 512
+                    type: string
+                  port:
+                    description: port is the port on which the API server is serving.
+                    format: int32
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
               externalManagedControlPlane:
                 default: true
                 description: |-
@@ -384,6 +407,34 @@ spec:
                 description: Ready denotes that the AROControlPlane API Server is
                   ready to receive requests.
                 type: boolean
+              resources:
+                items:
+                  description: ResourceStatus represents the status of a resource.
+                  properties:
+                    ready:
+                      type: boolean
+                    resource:
+                      description: StatusResource is a handle to a resource.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - name
+                      - version
+                      type: object
+                  required:
+                  - ready
+                  - resource
+                  type: object
+                type: array
               version:
                 description: ARO-HCP OpenShift semantic version, for example "4.20.0".
                 type: string

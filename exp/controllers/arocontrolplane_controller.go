@@ -19,34 +19,34 @@ package controllers
 import (
 	"context"
 	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AroControlPlaneReconciler reconciles a AroControlPlane object.
-type AroControlPlaneReconciler struct {
+// AROControlPlaneReconciler reconciles a AroControlPlane object.
+type AROControlPlaneReconciler struct {
 	client.Client
 	WatchFilterValue string
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AroControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *AROControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	_, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AroControlPlaneReconciler.SetupWithManager",
-		tele.KVP("controller", infrav1exp.AROControlPlaneKind),
+		"controllers.AROControlPlaneReconciler.SetupWithManager",
+		tele.KVP("controller", v1beta2.AROControlPlaneKind),
 	)
 	defer done()
 
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1exp.AROControlPlane{}).
+		For(&v1beta2.AROControlPlane{}).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), log, r.WatchFilterValue)).
 		Owns(&corev1.Secret{}).
 		Build(r)
@@ -57,29 +57,29 @@ func (r *AroControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ct
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes/finalizers,verbs=update
 
 // Reconcile reconciles an AROControlPlane.
-func (r *AroControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, resultErr error) {
+func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, resultErr error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AroControlPlaneReconciler.Reconcile",
+		"controllers.AROControlPlaneReconciler.Reconcile",
 		tele.KVP("namespace", req.Namespace),
 		tele.KVP("name", req.Name),
-		tele.KVP("kind", infrav1exp.AROControlPlaneKind),
+		tele.KVP("kind", v1beta2.AROControlPlaneKind),
 	)
 	defer done()
 
 	log = log.WithValues("namespace", req.Namespace, "azureControlPlane", req.Name)
 
-	aroControlPlane := &infrav1exp.AROControlPlane{}
+	aroControlPlane := &v1beta2.AROControlPlane{}
 	err := r.Get(ctx, req.NamespacedName, aroControlPlane)
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	err = fmt.Errorf("not implemented")
-	log.Error(err, fmt.Sprintf("Reconciling %s", infrav1exp.AROMachinePoolKind))
+	log.Error(err, fmt.Sprintf("Reconciling %s", infrav2exp.AROMachinePoolKind))
 	return ctrl.Result{}, err
 }

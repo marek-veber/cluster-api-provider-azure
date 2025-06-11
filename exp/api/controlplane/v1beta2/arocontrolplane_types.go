@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1beta2
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // VersionGateAckType specifies the version gate acknowledgment.
@@ -53,7 +55,7 @@ const (
 
 // AROControlPlaneSpec defines the desired state of AROControlPlane.
 type AROControlPlaneSpec struct { //nolint: maligned
-	// Cluster name must beDiskStorageAccountType valid DNS-1035 label, so it must consist of lower case alphanumeric
+	// Cluster name must be valid DNS-1035 label, so it must consist of lower case alphanumeric
 	// characters or '-', start with an alphabetic character, end with an alphanumeric character
 	// and have a max length of 54 characters.
 	//
@@ -71,8 +73,7 @@ type AROControlPlaneSpec struct { //nolint: maligned
 
 	// Network config for the ARO HCP cluster.
 	// +optional
-	// TODO: changed NetworkSpec -> ARONetworkSpec
-	Network *ARONetworkSpec `json:"network,omitempty"`
+	Network *NetworkSpec `json:"network,omitempty"`
 
 	// DomainPrefix is an optional prefix added to the cluster's domain name. It will be used
 	// when generating a sub-domain for the cluster on openshiftapps domain. It must be valid DNS-1035 label
@@ -169,8 +170,8 @@ type ControlPlaneOperators struct {
 	// IngressManagedIdentities "ingress" Microsoft.ManagedIdentity/userAssignedIdentities
 	IngressManagedIdentities string `json:"ingressManagedIdentities,omitempty"`
 
-	// DiskCsiDrivereManagedIdentities "disk-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
-	DiskCsiDrivereManagedIdentities string `json:"diskCsiDrivereManagedIdentities,omitempty"`
+	// DiskCsiDriverManagedIdentities "disk-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
+	DiskCsiDriverManagedIdentities string `json:"diskCsiDriverManagedIdentities,omitempty"`
 
 	// FileCsiDriverManagedIdentities "file-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
 	FileCsiDriverManagedIdentities string `json:"fileCsiDriverManagedIdentities,omitempty"`
@@ -186,8 +187,8 @@ type ControlPlaneOperators struct {
 }
 
 type DataPlaneOperators struct {
-	// DiskCsiDrivereManagedIdentities "disk-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
-	DiskCsiDrivereManagedIdentities string `json:"diskCsiDrivereManagedIdentities,omitempty"`
+	// DiskCsiDriverManagedIdentities "disk-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
+	DiskCsiDriverManagedIdentities string `json:"diskCsiDriverManagedIdentities,omitempty"`
 
 	// FileCsiDriverManagedIdentities "file-csi-driver" Microsoft.ManagedIdentity/userAssignedIdentities
 	FileCsiDriverManagedIdentities string `json:"fileCsiDriverManagedIdentities,omitempty"`
@@ -197,7 +198,7 @@ type DataPlaneOperators struct {
 }
 
 // NetworkSpec for ARO-HCP.
-type ARONetworkSpec struct {
+type NetworkSpec struct {
 	// IP addresses block used by OpenShift while installing the cluster, for example "10.0.0.0/16".
 	// +kubebuilder:validation:Format=cidr
 	// +optional
@@ -274,9 +275,9 @@ type AROControlPlaneStatus struct {
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AROControl belongs"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Control plane infrastructure is ready for worker nodes"
 // +k8s:defaulter-gen=true
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=arocontrolplanes/finalizers,verbs=update
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=arocontrolplanes/finalizers,verbs=update
 
 // AROControlPlane is the Schema for the AROControlPlanes API.
 type AROControlPlane struct {
@@ -287,7 +288,13 @@ type AROControlPlane struct {
 	Status AROControlPlaneStatus `json:"status,omitempty"`
 }
 
-const AROControlPlaneKind = "AROControlPlane"
+const (
+	// AROControlPlaneKind is the kind for AROControlPlane.
+	AROControlPlaneKind = "AROControlPlane"
+
+	// AROControlPlaneFinalizer is the finalizer added to AROControlPlanes.
+	AROControlPlaneFinalizer = "arocontrolplanes/finalizer"
+)
 
 // +kubebuilder:object:root=true
 
@@ -303,7 +310,7 @@ func (r *AROControlPlane) GetConditions() clusterv1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetConditions sets the status conditions for the AWSManagedControlPlane.
+// SetConditions sets the status conditions for the AROControlPlane.
 func (r *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
