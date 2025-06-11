@@ -25,7 +25,7 @@ settings = {
     "capi_version": "v1.10.2",
     "caaph_version": "v0.2.5",
     "cert_manager_version": "v1.17.2",
-    "kubernetes_version": "v1.30.2",
+    "kubernetes_version": "v1.32.2",
     "aks_kubernetes_version": "v1.30.2",
     "flatcar_version": "3374.2.1",
     "azure_location": "eastus",
@@ -468,6 +468,15 @@ def deploy_worker_templates(template, substitutions):
     until ''' + kubectl_cmd + ''' --kubeconfig=./${CLUSTER_NAME}.kubeconfig get nodes > /dev/null 2>&1; do sleep 5; done;
     echo "API Server of ${CLUSTER_NAME} is accessible";
     '''
+
+    # copy the kubeadm configmap to the calico-system namespace.
+    # This is a workaround needed for the calico-node-windows daemonset to be able to run in the calico-system namespace.
+    if "windows" in flavor_name:
+        flavor_cmd += """
+        until """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system > /dev/null 2>&1; do sleep 5; done;
+        """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig create namespace calico-system --dry-run=client -o yaml |         """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -;
+        """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig get configmap kubeadm-config --namespace=kube-system -o yaml |         sed 's/namespace: kube-system/namespace: calico-system/' |         """ + kubectl_cmd + """ --kubeconfig ./${CLUSTER_NAME}.kubeconfig apply -f -;
+        """
 
     if "aks_as_mgmt_settings" in settings and needs_vnet_peering(flavor_name):
         flavor_cmd += create_private_dns_zone()
