@@ -643,6 +643,11 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
+		if err := (&infrav1beta2exp.AROCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROCluster")
+			os.Exit(1)
+		}
+
 		if err := (&infrav1controllersexp.AROControlPlaneReconciler{
 			Client:           mgr.GetClient(),
 			WatchFilterValue: watchFilterValue,
@@ -650,6 +655,11 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			Timeouts:         timeouts,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AROControlPlane")
+			os.Exit(1)
+		}
+
+		if err := cplanev1beta2exp.SetupAROControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AROControlPlane")
 			os.Exit(1)
 		}
 
@@ -662,6 +672,11 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 				credCache,
 			).SetupWithManager(ctx, mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}, Cache: clusterCache}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
+				os.Exit(1)
+			}
+			
+			if err := infrav1beta2exp.SetupAROMachinePoolWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AROMachinePool")
 				os.Exit(1)
 			}
 		}
