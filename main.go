@@ -674,7 +674,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 				setupLog.Error(err, "unable to create controller", "controller", "AROMachinePool")
 				os.Exit(1)
 			}
-			
+
 			if err := infrav1beta2exp.SetupAROMachinePoolWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create webhook", "webhook", "AROMachinePool")
 				os.Exit(1)

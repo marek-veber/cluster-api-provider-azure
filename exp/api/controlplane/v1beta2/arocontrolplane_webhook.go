@@ -33,6 +33,7 @@ import (
 )
 
 var (
+	ocpSemver                  = regexp.MustCompile(`^openshift-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 	kubeSemver                 = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 	rMaxNodeProvisionTime      = regexp.MustCompile(`^(\d+)m$`)
 	rScaleDownTime             = regexp.MustCompile(`^(\d+)m$`)
@@ -171,7 +172,7 @@ func (m *AROControlPlane) Validate(cli client.Client) error {
 		}
 	}
 
-	allErrs = append(allErrs, validateVersion(
+	allErrs = append(allErrs, validateOCPVersion(
 		m.Spec.Version,
 		field.NewPath("spec").Child("version"))...)
 
@@ -220,11 +221,11 @@ func (m *AROControlPlane) validateDNSPrefix(_ client.Client) field.ErrorList {
 	return allErrs
 }
 
-// validateVersion validates the Kubernetes version.
-func validateVersion(version string, fldPath *field.Path) field.ErrorList {
+// validateOCPVersion validates the Kubernetes version.
+func validateOCPVersion(version string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if !kubeSemver.MatchString(version) {
-		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a valid semantic version"))
+	if !ocpSemver.MatchString(version) {
+		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a openshift-<valid semantic version>"))
 	}
 
 	return allErrs
