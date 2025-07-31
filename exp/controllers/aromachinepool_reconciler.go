@@ -110,12 +110,12 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 
 	// s.scope.SetSubnetName() TODO: mveber - why
 
-	log.Info("reconciling managed machine pool")
+	log.Info("reconciling ARO machine pool")
 
 	agentPoolName := s.scope.Name()
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
+		return errors.Wrapf(err, "failed to reconcile ARO machine pool %s", agentPoolName)
 	}
 
 	/* TODO: mveber - ???
@@ -162,7 +162,7 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 	*/
 	s.scope.SetAgentPoolReady(true)
 
-	log.Info("reconciled managed machine pool successfully")
+	log.Info("reconciled ARO machine pool successfully")
 	return nil
 }
 

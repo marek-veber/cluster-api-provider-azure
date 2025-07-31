@@ -229,9 +229,11 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	defer func() {
 		if err := acpScope.PatchObject(ctx); err != nil && resultErr == nil {
 			resultErr = err
+			result = reconcile.Result{}
 		}
 		if err := acpScope.PatchCAPIMachinePoolObject(ctx); err != nil && resultErr == nil {
 			resultErr = err
+			result = reconcile.Result{}
 		}
 	}()
 

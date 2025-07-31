@@ -241,6 +241,7 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	defer func() {
 		if err := aroScope.Close(ctx); err != nil {
 			resultErr = errorsCore.Join(resultErr, err)
+			result = ctrl.Result{}
 		}
 	}()
 

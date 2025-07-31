@@ -18,7 +18,6 @@ package scope
 
 import (
 	"context"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -26,6 +25,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftnodepools"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	v1beta2 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -131,8 +131,11 @@ func (s *AROMachinePoolScope) NodePoolSpecs(ctx context.Context) azure.ResourceS
 	return ret
 }
 
-func (s *AROMachinePoolScope) SetStatusVersion(version *arohcp.NodePoolVersionProfile) {
-	s.InfraMachinePool.Status.Version = *version.ID
+func (s *AROMachinePoolScope) SetStatusVersion(versionProfile *arohcp.NodePoolVersionProfile) {
+	if versionProfile == nil {
+		return
+	}
+	s.InfraMachinePool.Status.Version = *versionProfile.ID
 }
 
 func (s *AROMachinePoolScope) SetProvisioningState(state *arohcp.ProvisioningState) {
@@ -253,6 +256,9 @@ func (s *AROMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 
 // SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
 func (s *AROMachinePoolScope) SetAgentPoolReady(ready bool) {
+	if s.InfraMachinePool.Status.ProvisioningState != string(arohcp.ProvisioningStateSucceeded) {
+		ready = false
+	}
 	s.InfraMachinePool.Status.Ready = ready
 }
 
@@ -272,11 +278,6 @@ func (s *AROMachinePoolScope) Name() string {
 // Location returns location
 func (s *AROMachinePoolScope) Location() string {
 	return s.ControlPlane.Spec.Platform.Location
-}
-
-// SetVersionStatus sets the k8s version in status.
-func (s *AROMachinePoolScope) SetVersionStatus(version string) {
-	s.InfraMachinePool.Status.Version = version
 }
 
 // ResourceGroup returns the cluster resource group.

@@ -92,14 +92,15 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 
 	var errs []error
 
-	errs = append(errs, validateMaxReplicas(
-		&m.Spec.Autoscaling.MaxReplicas,
-		field.NewPath("spec", "autoscaling", "maxReplicas")))
+	if m.Spec.Autoscaling != nil {
+		errs = append(errs, validateMaxReplicas(
+			&m.Spec.Autoscaling.MaxReplicas,
+			field.NewPath("spec", "autoscaling", "maxReplicas")))
 
-	errs = append(errs, validateMinReplicas(
-		&m.Spec.Autoscaling.MinReplicas,
-		field.NewPath("spec", "autoscaling", "minReplicas")))
-
+		errs = append(errs, validateMinReplicas(
+			&m.Spec.Autoscaling.MinReplicas,
+			field.NewPath("spec", "autoscaling", "minReplicas")))
+	}
 	/*
 		errs = append(errs, validateOSType(
 			m.Spec.Mode,
@@ -112,7 +113,7 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 			m.Spec.OSType,
 			field.NewPath("spec", "name")))
 
-		errs = append(errs, validateNodeLabels(
+		errs = append(errs, validateLabels(
 			m.Spec.NodeLabels,
 			field.NewPath("spec", "nodeLabels")))
 
@@ -160,34 +161,25 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 		allErrs = append(allErrs, err)
 	}
 
-	/*
-		if err := validateNodeLabels(m.Spec.NodeLabels, field.NewPath("spec", "nodeLabels")); err != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("spec", "nodeLabels"),
-					m.Spec.NodeLabels,
-					err.Error()))
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "osType"),
-			old.Spec.OSType,
-			m.Spec.OSType); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "sku"),
-			old.Spec.SKU,
-			m.Spec.SKU); err != nil {
-			allErrs = append(allErrs, err)
-		}
-	*/
+	if err := validateLabels(m.Spec.Labels, field.NewPath("spec", "labels")); err != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("spec", "labels"),
+				m.Spec.Labels,
+				err.Error()))
+	}
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "platform", "diskSizeGiB"),
 		old.Spec.Platform.DiskSizeGiB,
 		m.Spec.Platform.DiskSizeGiB); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "platform", "VMSize"),
+		old.Spec.Platform.VMSize,
+		m.Spec.Platform.VMSize); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
@@ -198,14 +190,30 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 		allErrs = append(allErrs, err)
 	}
 
-	/*
+	if old.Spec.Autoscaling != nil && m.Spec.Autoscaling != nil {
 		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "enableFIPS"),
-			old.Spec.EnableFIPS,
-			m.Spec.EnableFIPS); err != nil && old.Spec.EnableFIPS != nil {
+			field.NewPath("spec", "autoscaling", "minReplicas"),
+			old.Spec.Autoscaling.MinReplicas,
+			m.Spec.Autoscaling.MinReplicas); err != nil {
 			allErrs = append(allErrs, err)
 		}
 
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("spec", "autoscaling", "maxReplicas"),
+			old.Spec.Autoscaling.MaxReplicas,
+			m.Spec.Autoscaling.MaxReplicas); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	} else {
+		if err := webhookutils.ValidateImmutable(
+			field.NewPath("spec", "autoscaling"),
+			old.Spec.Autoscaling,
+			m.Spec.Autoscaling); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	/*
 		if err := webhookutils.ValidateImmutable(
 			field.NewPath("spec", "enableEncryptionAtHost"),
 			old.Spec.EnableEncryptionAtHost,
@@ -277,12 +285,6 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 			allErrs = append(allErrs, err)
 		}
 
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "kubeletDiskType"),
-			old.Spec.KubeletDiskType,
-			m.Spec.KubeletDiskType); err != nil {
-			allErrs = append(allErrs, err)
-		}
 
 		if err := webhookutils.ValidateImmutable(
 			field.NewPath("spec", "linuxOSConfig"),
@@ -356,7 +358,7 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 	}
 
 	if len(ammpList.Items) <= 1 {
-		return errors.New("AKS Cluster must have at least one system pool")
+		return errors.New("ARO Cluster must have at least one system pool")
 	}
 	return nil
 }
@@ -455,7 +457,7 @@ func validateNamePattern(name *string, fieldNameMessage string, fldPath *field.P
 	return nil
 }
 
-func validateNodeLabels(nodeLabels map[string]string, fldPath *field.Path) error {
+func validateLabels(nodeLabels map[string]string, fldPath *field.Path) error {
 	for key := range nodeLabels {
 		if azureutil.IsAzureSystemNodeLabelKey(key) {
 			return field.Invalid(

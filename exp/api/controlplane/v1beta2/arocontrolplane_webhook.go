@@ -115,6 +115,7 @@ func (mw *aroControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newO
 	}{
 		{field.NewPath("spec", "platform", "resourceGroup"), old.Spec.Platform.ResourceGroup, m.Spec.Platform.ResourceGroup},
 		{field.NewPath("spec", "platform", "location"), old.Spec.Platform.Location, m.Spec.Platform.Location},
+		{field.NewPath("spec", "platform", "networkSecurityGroupID"), old.Spec.Platform.NetworkSecurityGroupID, m.Spec.Platform.NetworkSecurityGroupID},
 	}
 
 	for _, f := range immutableFields {
