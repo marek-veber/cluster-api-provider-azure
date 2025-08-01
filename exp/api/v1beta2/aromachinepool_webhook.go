@@ -93,13 +93,13 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 	var errs []error
 
 	if m.Spec.Autoscaling != nil {
-		errs = append(errs, validateMaxReplicas(
-			&m.Spec.Autoscaling.MaxReplicas,
-			field.NewPath("spec", "autoscaling", "maxReplicas")))
-
 		errs = append(errs, validateMinReplicas(
 			&m.Spec.Autoscaling.MinReplicas,
 			field.NewPath("spec", "autoscaling", "minReplicas")))
+
+		errs = append(errs, validateMaxReplicas(
+			&m.Spec.Autoscaling.MaxReplicas, &m.Spec.Autoscaling.MinReplicas,
+			field.NewPath("spec", "autoscaling", "maxReplicas")))
 	}
 	/*
 		errs = append(errs, validateOSType(
@@ -363,7 +363,7 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 	return nil
 }
 
-func validateMaxReplicas(maxReplicas *int, fldPath *field.Path) error {
+func validateMaxReplicas(maxReplicas *int, minReplicas *int, fldPath *field.Path) error {
 	if maxReplicas != nil {
 		maxReplicasMin := 2
 		maxReplicasMax := 250
@@ -372,6 +372,12 @@ func validateMaxReplicas(maxReplicas *int, fldPath *field.Path) error {
 				fldPath,
 				maxReplicas,
 				fmt.Sprintf("MaxReplicas must be between %d and %d", maxReplicasMin, maxReplicasMax))
+		}
+		if ptr.Deref(maxReplicas, 0) < ptr.Deref(minReplicas, 0) {
+			return field.Invalid(
+				fldPath,
+				maxReplicas,
+				fmt.Sprintf("MaxReplicas must be at least the value of MinReplicas(=%d)", ptr.Deref(minReplicas, 0)))
 		}
 	}
 
