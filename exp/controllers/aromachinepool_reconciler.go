@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftnodepools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"strings"
 	"time"
 
@@ -113,6 +115,13 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 
 	log.Info("reconciling ARO machine pool")
 
+	if s.scope.InfraMachinePool.Spec.Autoscaling != nil && !annotations.ReplicasManagedByExternalAutoscaler(s.scope.MachinePool) {
+		// make sure cluster.x-k8s.io/replicas-managed-by annotation is set on CAPI MachinePool when autoscaling is enabled.
+		annotations.AddAnnotations(s.scope.MachinePool, map[string]string{
+			clusterv1.ReplicasManagedByAnnotation: "aro",
+		})
+	}
+
 	agentPoolName := s.scope.Name()
 
 	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
@@ -131,11 +140,25 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 		if vm.Name == nil || !strings.HasPrefix(*vm.Name, namePrefix) {
 			continue
 		}
+		if vm.ID == nil {
+			continue
+		}
 		providerIDs = append(providerIDs, "azure://"+*vm.ID)
+	}
+	currentReplicas := int32(len(providerIDs))
+
+	if annotations.ReplicasManagedByExternalAutoscaler(s.scope.MachinePool) {
+		// Set MachinePool replicas to aro autoscaling replicas
+		if *s.scope.MachinePool.Spec.Replicas != currentReplicas {
+			log.Info("Setting MachinePool replicas to aro autoscaling replicas",
+				"local", *s.scope.MachinePool.Spec.Replicas,
+				"external", currentReplicas)
+			s.scope.MachinePool.Spec.Replicas = &currentReplicas
+		}
 	}
 
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
-	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
+	s.scope.SetAgentPoolReplicas(currentReplicas)
 	s.scope.SetAgentPoolReady(true)
 
 	log.Info("reconciled ARO machine pool successfully")
