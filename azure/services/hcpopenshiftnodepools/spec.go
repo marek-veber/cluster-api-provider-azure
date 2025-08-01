@@ -19,10 +19,10 @@ package hcpopenshiftnodepools
 import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
@@ -276,14 +276,14 @@ func cmpPtr[V string | bool | int32 | arohcp.DiskStorageAccountType | arohcp.Tai
 	}
 	if (s1 != nil) && (s2 != nil) {
 		switch t1 := any(s1).(type) {
-		case arohcp.Label:
+		case *arohcp.Label:
 			switch t2 := any(s2).(type) {
-			case arohcp.Label:
+			case *arohcp.Label:
 				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value)
 			}
-		case arohcp.Taint:
+		case *arohcp.Taint:
 			switch t2 := any(s2).(type) {
-			case arohcp.Taint:
+			case *arohcp.Taint:
 				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value) || cmpPtr(t1.Effect, t2.Effect)
 			}
 		}
