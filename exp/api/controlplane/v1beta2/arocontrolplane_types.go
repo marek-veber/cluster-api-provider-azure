@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -339,6 +340,11 @@ func (r *AROControlPlane) GetConditions() clusterv1.Conditions {
 // SetConditions sets the status conditions for the AROControlPlane.
 func (r *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
+}
+
+func (s *AROPlatformProfileControlPlane) NodeResourceGroup() string {
+	nodeResourceGroup := fmt.Sprintf("capz_node_%s_rg", s.ResourceGroup)
+	return nodeResourceGroup
 }
 
 func init() {

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -41,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -238,6 +238,7 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(ctx context.Context) azu
 		Name:                   s.Cluster.Name,
 		Location:               s.Location(),
 		ResourceGroup:          s.ResourceGroup(),
+		NodeResourceGroup:      s.NodeResourceGroup(),
 		ManagedIdentities:      &s.ControlPlane.Spec.Platform.ManagedIdentities,
 		AdditionalTags:         s.ControlPlane.Spec.AdditionalTags,
 		NetworkSecurityGroupID: s.ControlPlane.Spec.Platform.NetworkSecurityGroupID,
@@ -547,6 +548,10 @@ func (s *AROControlPlaneScope) UpdateSubnetID(name string, id string) {
 // ResourceGroup returns the cluster resource group.
 func (s *AROControlPlaneScope) ResourceGroup() string {
 	return s.ControlPlane.Spec.Platform.ResourceGroup
+}
+
+func (s *AROControlPlaneScope) NodeResourceGroup() string {
+	return s.ControlPlane.Spec.Platform.NodeResourceGroup()
 }
 
 // ClusterName returns the cluster name.

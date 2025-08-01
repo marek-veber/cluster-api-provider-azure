@@ -292,6 +292,9 @@ func (ampr *AROMachinePoolReconciler) reconcileNormal(ctx context.Context, scope
 
 			if reconcileError.IsTransient() {
 				log.V(4).Info("requeuing due to transient failure", "error", err)
+				if scope.InfraMachinePool.Status.ProvisioningState == infrav1.UpdatingReason {
+					scope.SetAgentPoolReady(true)
+				}
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 

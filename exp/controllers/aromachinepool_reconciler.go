@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftnodepools"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
@@ -32,9 +34,9 @@ import (
 type (
 	// aroMachinePoolService contains the services required by the cluster controller.
 	aroMachinePoolService struct {
-		scope         *scope.AROMachinePoolScope
-		agentPoolsSvc azure.Reconciler
-		scaleSetsSvc  NodeLister
+		scope              *scope.AROMachinePoolScope
+		agentPoolsSvc      azure.Reconciler
+		virtualMachinesSvc NodeLister
 	}
 
 	// AgentPoolVMSSNotFoundError represents a reconcile error when the VMSS for an agent pool can't be found.
@@ -45,8 +47,7 @@ type (
 
 	// NodeLister is a service interface for returning generic lists.
 	NodeLister interface {
-		ListInstances(context.Context, string, string) ([]armcompute.VirtualMachineScaleSetVM, error)
-		List(context.Context, string) ([]armcompute.VirtualMachineScaleSet, error)
+		List(context.Context, string) ([]armcompute.VirtualMachine, error)
 	}
 )
 
@@ -72,28 +73,28 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 
 // newAROMachinePoolService populates all the services based on input scope.
 func newAROMachinePoolService(scope *scope.AROMachinePoolScope, apiCallTimeout time.Duration) (*aroMachinePoolService, error) {
-	//scaleSetAuthorizer, err := scaleSetAuthorizer(scope)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//scaleSetsClient, err := scalesets.NewClient(scaleSetAuthorizer, apiCallTimeout)
-	//if err != nil {
-	//	return nil, err
-	//}
+	virtualMachinesAuthorizer, err := virtualMachinesAuthorizer(scope)
+	if err != nil {
+		return nil, err
+	}
+	virtualMachinesClient, err := virtualmachines.NewClient(virtualMachinesAuthorizer, apiCallTimeout)
+	if err != nil {
+		return nil, err
+	}
 	nodePoolService, err := hcpopenshiftnodepools.New(scope)
 	if err != nil {
 		return nil, err
 	}
 	return &aroMachinePoolService{
-		scope:         scope,
-		agentPoolsSvc: nodePoolService,
-		//scaleSetsSvc:  scaleSetsClient,
+		scope:              scope,
+		agentPoolsSvc:      nodePoolService,
+		virtualMachinesSvc: virtualMachinesClient,
 	}, nil
 }
 
-// scaleSetAuthorizer takes a scope and determines if a regional authorizer is needed for scale sets
+// virtualMachinesAuthorizer takes a scope and determines if a regional authorizer is needed for scale sets
 // see https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/1850 for context on region based authorizer.
-func scaleSetAuthorizer(scope *scope.AROMachinePoolScope) (azure.Authorizer, error) {
+func virtualMachinesAuthorizer(scope *scope.AROMachinePoolScope) (azure.Authorizer, error) {
 	/* TODO: mveber - why/how
 	if scope.ControlPlane.Spec.AzureEnvironment == azure.PublicCloudName {
 		return azure.WithRegionalBaseURI(scope, scope.Location()) // public cloud supports regional end points
@@ -118,48 +119,23 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile ARO machine pool %s", agentPoolName)
 	}
 
-	/* TODO: mveber - ???
 	nodeResourceGroup := s.scope.NodeResourceGroup()
-	vmss, err := s.scaleSetsSvc.List(ctx, nodeResourceGroup)
+	vmss, err := s.virtualMachinesSvc.List(ctx, nodeResourceGroup)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
 	}
 
-	var match *armcompute.VirtualMachineScaleSet
-	for _, ss := range vmss {
-		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
-			match = &ss
-			break
+	namePrefix := s.scope.ClusterName() + "-" + s.scope.InfraMachinePool.Spec.NodePoolName + "-"
+	var providerIDs []string
+	for _, vm := range vmss {
+		if vm.Name == nil || !strings.HasPrefix(*vm.Name, namePrefix) {
+			continue
 		}
-
-		if ss.Tags["aks-managed-poolName"] != nil && *ss.Tags["aks-managed-poolName"] == agentPoolName {
-			match = &ss
-			break
-		}
-	}
-
-	if match == nil {
-		return azure.WithTransientError(NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName), 20*time.Second)
-	}
-
-	instances, err := s.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
-	if err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
-	}
-
-	var providerIDs = make([]string, len(instances))
-	for i := 0; i < len(instances); i++ {
-		// Transform the VMSS instance resource representation to conform to the cloud-provider-azure representation
-		providerID, err := azprovider.ConvertResourceGroupNameToLower(azureutil.ProviderIDPrefix + *instances[i].ID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse instance ID %s", *instances[i].ID)
-		}
-		providerIDs[i] = providerID
+		providerIDs = append(providerIDs, "azure://"+*vm.ID)
 	}
 
 	s.scope.SetAgentPoolProviderIDList(providerIDs)
 	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
-	*/
 	s.scope.SetAgentPoolReady(true)
 
 	log.Info("reconciled ARO machine pool successfully")

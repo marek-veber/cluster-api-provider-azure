@@ -148,7 +148,11 @@ func (s *AROMachinePoolScope) SetProvisioningState(state *arohcp.ProvisioningSta
 		conditions.MarkTrue(s.InfraMachinePool, v1beta2.AROMachinePoolReadyCondition)
 		return
 	}
-	conditions.MarkFalse(s.InfraMachinePool, v1beta2.AROMachinePoolReadyCondition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "ProvisioningState=%s", string(*state))
+	reason := infrav1.CreatingReason
+	if *state == arohcp.ProvisioningStateUpdating {
+		reason = infrav1.UpdatingReason
+	}
+	conditions.MarkFalse(s.InfraMachinePool, v1beta2.AROMachinePoolReadyCondition, reason, clusterv1.ConditionSeverityInfo, "ProvisioningState=%s", string(*state))
 }
 
 // SetLongRunningOperationState will set the future on the AROMachinePool status to allow the resource to continue
@@ -185,7 +189,11 @@ func (s *AROMachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType,
 	case err == nil:
 		conditions.MarkTrue(s.InfraMachinePool, condition)
 	case azure.IsOperationNotDoneError(err):
-		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+		reason := infrav1.CreatingReason
+		if s.InfraMachinePool.Status.ProvisioningState == string(arohcp.ProvisioningStateUpdating) {
+			reason = infrav1.UpdatingReason
+		}
+		conditions.MarkFalse(s.InfraMachinePool, condition, reason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
 	default:
 		conditions.MarkFalse(s.InfraMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
 	}
@@ -249,6 +257,11 @@ func (s *AROMachinePoolScope) PatchCAPIMachinePoolObject(ctx context.Context) er
 	)
 }
 
+// SetAgentPoolProviderIDList sets a list of agent pool's Azure VM IDs.
+func (s *AROMachinePoolScope) SetAgentPoolProviderIDList(providerIDs []string) {
+	s.InfraMachinePool.Spec.ProviderIDList = providerIDs
+}
+
 // SetAgentPoolReplicas sets the number of agent pool replicas.
 func (s *AROMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 	s.InfraMachinePool.Status.Replicas = replicas
@@ -256,10 +269,14 @@ func (s *AROMachinePoolScope) SetAgentPoolReplicas(replicas int32) {
 
 // SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
 func (s *AROMachinePoolScope) SetAgentPoolReady(ready bool) {
-	if s.InfraMachinePool.Status.ProvisioningState != string(arohcp.ProvisioningStateSucceeded) {
+	if s.InfraMachinePool.Status.ProvisioningState != string(arohcp.ProvisioningStateSucceeded) &&
+		s.InfraMachinePool.Status.ProvisioningState != string(arohcp.ProvisioningStateUpdating) {
 		ready = false
 	}
 	s.InfraMachinePool.Status.Ready = ready
+	if s.InfraMachinePool.Status.Initialization == nil || !s.InfraMachinePool.Status.Initialization.Provisioned {
+		s.InfraMachinePool.Status.Initialization = &v1beta2.AROMachinePoolInitializationStatus{Provisioned: ready}
+	}
 }
 
 // Close closes the current scope persisting the control plane configuration and status.
@@ -283,6 +300,10 @@ func (s *AROMachinePoolScope) Location() string {
 // ResourceGroup returns the cluster resource group.
 func (s *AROMachinePoolScope) ResourceGroup() string {
 	return s.ControlPlane.Spec.Platform.ResourceGroup
+}
+
+func (s *AROMachinePoolScope) NodeResourceGroup() string {
+	return s.ControlPlane.Spec.Platform.NodeResourceGroup()
 }
 
 // ClusterName returns the cluster name.

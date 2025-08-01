@@ -181,7 +181,9 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}()
 
 	aroControlPlane.Status.Ready = false
-	aroControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: false}
+	if aroControlPlane.Status.Initialization == nil {
+		aroControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: false}
+	}
 
 	// Get the cluster
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, aroControlPlane.ObjectMeta)
@@ -316,7 +318,9 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.ControlPlane.Status.Ready = (aroControlPlane.Status.APIURL != "")
-	scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: scope.ControlPlane.Status.Ready}
+	if scope.ControlPlane.Status.Initialization == nil || !scope.ControlPlane.Status.Initialization.ControlPlaneInitialized {
+		scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: scope.ControlPlane.Status.Ready}
+	}
 
 	/*
 		aroCluster := &infrav2exp.AROCluster{}

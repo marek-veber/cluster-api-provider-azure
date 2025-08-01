@@ -247,6 +247,17 @@ spec:
               id:
                 description: ID is the ID given by ARO.
                 type: string
+              initialization:
+                description: |-
+                  initialization provides observations of the AROMachinePool initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+                properties:
+                  provisioned:
+                    description: |-
+                      provision is true when the AROMachinePoolInitializationStatus provider reports that the infra machine pool is provisioned;
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+                    type: boolean
+                type: object
               longRunningOperationStates:
                 description: |-
                   LongRunningOperationStates saves the state for ARO long-running operations so they can be continued on the

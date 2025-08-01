@@ -270,7 +270,9 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 		aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: true}
 		conditions.MarkTrue(aroCluster, v1beta1.NetworkInfrastructureReadyCondition)
 	} else {
-		aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: false}
+		if aroCluster.Status.Initialization == nil {
+			aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: false}
+		}
 		conditions.MarkFalse(aroCluster, v1beta1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
 	}
 	conditions.SetSummary(aroCluster)

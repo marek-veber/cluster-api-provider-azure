@@ -172,6 +172,19 @@ type AROMachinePoolStatus struct {
 	// next reconciliation loop.
 	// +optional
 	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
+
+	// initialization provides observations of the AROMachinePool initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization *AROMachinePoolInitializationStatus `json:"initialization,omitempty"` // TODO: mvwbwe - Mohames's proposal is for v1beta1
+}
+
+// AROMachinePoolInitializationStatus provides observations of the AROCluster initialization process.
+type AROMachinePoolInitializationStatus struct {
+	// provision is true when the AROMachinePoolInitializationStatus provider reports that the infra machine pool is provisioned;
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	Provisioned bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -179,6 +192,7 @@ type AROMachinePoolStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="MachinePool ready status"
+// +kubebuilder:printcolumn:name="Provisioned",type="boolean",JSONPath=".status.initialization.provisioned",description="Control plane infrastructure is provisioned"
 // +kubebuilder:printcolumn:name="Replicas",type="integer",JSONPath=".status.replicas",description="Number of replicas"
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=aromachinepools/status,verbs=get;update;patch

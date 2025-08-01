@@ -18,12 +18,11 @@ package hcpopenshiftclusters
 
 import (
 	"context"
-	"fmt"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 )
 
 // HcpOpenShiftClustersSpec defines the specification for a HcpOpenShiftCluster.
@@ -31,6 +30,7 @@ type HcpOpenShiftClustersSpec struct {
 	Name                   string
 	Location               string
 	ResourceGroup          string
+	NodeResourceGroup      string
 	ManagedIdentities      *cplane.ManagedIdentities
 	AdditionalTags         map[string]string
 	NetworkSecurityGroupID string
@@ -113,8 +113,7 @@ func (s *HcpOpenShiftClustersSpec) getTags() map[string]*string {
 
 // getManagedResourceGroup - returns manager resource group name
 func (s *HcpOpenShiftClustersSpec) getManagedResourceGroup() *string {
-	managedResourceGroup := fmt.Sprintf("capz_aro_managed_%s_rg", s.Name)
-	return &managedResourceGroup
+	return &s.NodeResourceGroup
 }
 
 // getManagedResourceGroup - returns manager resource group name
