@@ -33,10 +33,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclusters/mock_hcpopenshiftclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -50,19 +50,19 @@ var (
 		NodeResourceGroup: "test-node-rg",
 		ManagedIdentities: &cplane.ManagedIdentities{
 			ControlPlaneOperators: &cplane.ControlPlaneOperators{
-				ControlPlaneManagedIdentities:              "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane",
-				ClusterAPIAzureManagedIdentities:           "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure",
-				CloudControllerManagerManagedIdentities:    "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-controller-manager",
-				IngressManagedIdentities:                   "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ingress",
-				DiskCsiDriverManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/disk-csi-driver",
-				FileCsiDriverManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
-				ImageRegistryManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
-				CloudNetworkConfigManagedIdentities:        "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
+				ControlPlaneManagedIdentities:           "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane",
+				ClusterAPIAzureManagedIdentities:        "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure",
+				CloudControllerManagerManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-controller-manager",
+				IngressManagedIdentities:                "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ingress",
+				DiskCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/disk-csi-driver",
+				FileCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
+				ImageRegistryManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
+				CloudNetworkConfigManagedIdentities:     "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
 			},
 			DataPlaneOperators: &cplane.DataPlaneOperators{
-				DiskCsiDriverManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
-				FileCsiDriverManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-file-csi-driver",
-				ImageRegistryManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-image-registry",
+				DiskCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
+				FileCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-file-csi-driver",
+				ImageRegistryManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-image-registry",
 			},
 			ServiceManagedIdentity: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/service",
 		},
@@ -70,14 +70,14 @@ var (
 			"test-key": "test-value",
 		},
 		NetworkSecurityGroupID: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
-		Subnet:                  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
-		OutboundType:            "LoadBalancer",
+		Subnet:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		OutboundType:           "LoadBalancer",
 		Network: &cplane.NetworkSpec{
-			NetworkType:   "OVNKubernetes",
-			MachineCIDR:   "10.0.0.0/16",
-			ServiceCIDR:   "172.30.0.0/16",
-			PodCIDR:       "10.128.0.0/14",
-			HostPrefix:    23,
+			NetworkType: "OVNKubernetes",
+			MachineCIDR: "10.0.0.0/16",
+			ServiceCIDR: "172.30.0.0/16",
+			PodCIDR:     "10.128.0.0/14",
+			HostPrefix:  23,
 		},
 		Version:      "4.19.0",
 		ChannelGroup: v1beta2.Stable,
@@ -213,11 +213,11 @@ func TestReconcileHcpOpenShiftCluster(t *testing.T) {
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), asyncMock.EXPECT(), identitiesClientMock.EXPECT())
 
 			s := &Service{
-				Scope:              scopeMock,
-				Client:             clientMock,
-				Reconciler:         asyncMock,
-				resourceSKUCache:   &resourceskus.Cache{},
-				identitiesGetter:   identitiesClientMock,
+				Scope:            scopeMock,
+				Client:           clientMock,
+				Reconciler:       asyncMock,
+				resourceSKUCache: &resourceskus.Cache{},
+				identitiesGetter: identitiesClientMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -236,14 +236,14 @@ func TestDeleteHcpOpenShiftCluster(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_hcpopenshiftclusters.MockHcpOpenShiftClusterScopeMockRecorder,
-			m *mock_hcpopenshiftclusters.MockClientMockRecorder, 
+			m *mock_hcpopenshiftclusters.MockClientMockRecorder,
 			r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "successfully delete an existing cluster",
 			expectedError: "",
 			expect: func(s *mock_hcpopenshiftclusters.MockHcpOpenShiftClusterScopeMockRecorder,
-				m *mock_hcpopenshiftclusters.MockClientMockRecorder, 
+				m *mock_hcpopenshiftclusters.MockClientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HcpOpenShiftClusterSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeHcpOpenShiftClusterSpec)
@@ -257,7 +257,7 @@ func TestDeleteHcpOpenShiftCluster(t *testing.T) {
 			name:          "cluster deletion fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_hcpopenshiftclusters.MockHcpOpenShiftClusterScopeMockRecorder,
-				m *mock_hcpopenshiftclusters.MockClientMockRecorder, 
+				m *mock_hcpopenshiftclusters.MockClientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HcpOpenShiftClusterSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeHcpOpenShiftClusterSpec)
@@ -267,7 +267,6 @@ func TestDeleteHcpOpenShiftCluster(t *testing.T) {
 				)
 			},
 		},
-
 	}
 
 	for _, tc := range testcases {
@@ -321,7 +320,7 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 		Identity: &arohcp.ManagedServiceIdentity{
 			Type: &managedServiceIdentityType,
 			UserAssignedIdentities: map[string]*arohcp.UserAssignedIdentity{
-				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane":              {},
+				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane":            {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure":        {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-controller-manager": {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ingress":                  {},
@@ -388,4 +387,4 @@ func fakeExistingHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 	cluster := fakeHcpOpenShiftCluster()
 	cluster.ID = ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test-cluster")
 	return cluster
-} 
+}

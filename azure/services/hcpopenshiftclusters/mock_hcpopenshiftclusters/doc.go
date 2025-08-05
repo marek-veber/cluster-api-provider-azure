@@ -20,4 +20,4 @@ limitations under the License.
 //go:generate ../../../../hack/tools/bin/mockgen -destination hcpopenshiftclusters_mock.go -package mock_hcpopenshiftclusters -source ../hcpopenshiftclusters.go HcpOpenShiftClusterScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt hcpopenshiftclusters_mock.go > _hcpopenshiftclusters_mock.go && mv _hcpopenshiftclusters_mock.go hcpopenshiftclusters_mock.go"
-package mock_hcpopenshiftclusters 
+package mock_hcpopenshiftclusters

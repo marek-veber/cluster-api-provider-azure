@@ -67,14 +67,14 @@ func TestDeleteHcpOpenShiftClusterCredentials(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_hcpopenshiftclustercredentials.MockHcpOpenShiftClusterCredentialScopeMockRecorder,
-			m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder, 
+			m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder,
 			r *mock_async.MockReconcilerMockRecorder)
 	}{
 		{
 			name:          "successfully delete an existing cluster credentials",
 			expectedError: "",
 			expect: func(s *mock_hcpopenshiftclustercredentials.MockHcpOpenShiftClusterCredentialScopeMockRecorder,
-				m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder, 
+				m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HcpOpenShiftClusterCredentialsSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeHcpOpenShiftClusterCredentialsSpec)
@@ -88,7 +88,7 @@ func TestDeleteHcpOpenShiftClusterCredentials(t *testing.T) {
 			name:          "cluster credentials deletion fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_hcpopenshiftclustercredentials.MockHcpOpenShiftClusterCredentialScopeMockRecorder,
-				m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder, 
+				m *mock_hcpopenshiftclustercredentials.MockClientMockRecorder,
 				r *mock_async.MockReconcilerMockRecorder) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.HcpOpenShiftClusterCredentialsSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeHcpOpenShiftClusterCredentialsSpec)
@@ -156,16 +156,16 @@ func TestNew(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	scopeMock := mock_hcpopenshiftclustercredentials.NewMockHcpOpenShiftClusterCredentialScope(mockCtrl)
-	
+
 	// Mock the required methods for the New function
 	scopeMock.EXPECT().DefaultedAzureCallTimeout().Return(30 * time.Second)
 	scopeMock.EXPECT().SubscriptionID().Return("test-subscription")
 	scopeMock.EXPECT().CloudEnvironment().Return("AzurePublicCloud")
-	
+
 	cache := &resourceskus.Cache{}
 	service, err := New(scopeMock, cache)
-	
+
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(service).NotTo(BeNil())
 	g.Expect(service.Name()).To(Equal("hcpopenshiftclustercredentials"))
-} 
+}

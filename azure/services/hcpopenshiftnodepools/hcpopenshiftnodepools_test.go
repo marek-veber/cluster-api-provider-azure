@@ -32,18 +32,16 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async/mock_async"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftnodepools/mock_hcpopenshiftnodepools"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var (
-	fakeGroupName = "my-rg"
-	fakeClusterName = "test-cluster"
+	fakeGroupName    = "my-rg"
+	fakeClusterName  = "test-cluster"
 	fakeNodePoolName = "test-nodepool"
-
-
 
 	internalError = &azcore.ResponseError{
 		RawResponse: &http.Response{
@@ -277,11 +275,11 @@ func fakeHcpOpenShiftNodePoolSpec() *HcpOpenShiftNodePoolSpec {
 		AROMachinePoolSpec: v1beta2.AROMachinePoolSpec{
 			NodePoolName: fakeNodePoolName,
 			Platform: v1beta2.AROPlatformProfileMachinePool{
-				VMSize:                  "Standard_D4s_v3",
-				DiskSizeGiB:             127,
-				DiskStorageAccountType:  "Premium_LRS",
-				AvailabilityZone:        "1",
-				Subnet:                  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+				VMSize:                 "Standard_D4s_v3",
+				DiskSizeGiB:            127,
+				DiskStorageAccountType: "Premium_LRS",
+				AvailabilityZone:       "1",
+				Subnet:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 			},
 			Version:      "4.19.0",
 			ChannelGroup: v1beta2.Stable,

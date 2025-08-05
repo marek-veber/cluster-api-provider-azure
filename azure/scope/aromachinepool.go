@@ -247,7 +247,7 @@ func (s *AROMachinePoolScope) PatchObject(ctx context.Context) error {
 			clusterv1.ReadyCondition,
 			v1beta2.AROMachinePoolReadyCondition,
 			// v1beta2.AROMachinePoolValidCondition,
-			//v1beta2.AROMachinePoolUpgradingCondition,
+			// v1beta2.AROMachinePoolUpgradingCondition,
 		}})
 }
 

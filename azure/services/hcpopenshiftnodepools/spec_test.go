@@ -23,11 +23,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 )
 
 func TestParameters(t *testing.T) {
@@ -99,8 +99,6 @@ func TestParameters(t *testing.T) {
 		})
 	}
 }
-
-
 
 func fakeHcpOpenShiftNodePoolSpecWithInvalidDiskType() HcpOpenShiftNodePoolSpec {
 	spec := *fakeHcpOpenShiftNodePoolSpec()

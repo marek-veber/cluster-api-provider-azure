@@ -112,19 +112,19 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 		NodeResourceGroup: "test-node-rg",
 		ManagedIdentities: &cplane.ManagedIdentities{
 			ControlPlaneOperators: &cplane.ControlPlaneOperators{
-				ControlPlaneManagedIdentities:              "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane",
-				ClusterAPIAzureManagedIdentities:           "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure",
-				CloudControllerManagerManagedIdentities:    "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-controller-manager",
-				IngressManagedIdentities:                   "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ingress",
-				DiskCsiDriverManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/disk-csi-driver",
-				FileCsiDriverManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
-				ImageRegistryManagedIdentities:             "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
-				CloudNetworkConfigManagedIdentities:        "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
+				ControlPlaneManagedIdentities:           "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/control-plane",
+				ClusterAPIAzureManagedIdentities:        "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure",
+				CloudControllerManagerManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-controller-manager",
+				IngressManagedIdentities:                "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ingress",
+				DiskCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/disk-csi-driver",
+				FileCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
+				ImageRegistryManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
+				CloudNetworkConfigManagedIdentities:     "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
 			},
 			DataPlaneOperators: &cplane.DataPlaneOperators{
-				DiskCsiDriverManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
-				FileCsiDriverManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-file-csi-driver",
-				ImageRegistryManagedIdentities:  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-image-registry",
+				DiskCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
+				FileCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-file-csi-driver",
+				ImageRegistryManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-image-registry",
 			},
 			ServiceManagedIdentity: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/service",
 		},
@@ -132,14 +132,14 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 			"test-key": "test-value",
 		},
 		NetworkSecurityGroupID: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
-		Subnet:                  "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
-		OutboundType:            "LoadBalancer",
+		Subnet:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		OutboundType:           "LoadBalancer",
 		Network: &cplane.NetworkSpec{
-			NetworkType:   "OVNKubernetes",
-			MachineCIDR:   "10.0.0.0/16",
-			ServiceCIDR:   "172.30.0.0/16",
-			PodCIDR:       "10.128.0.0/14",
-			HostPrefix:    23,
+			NetworkType: "OVNKubernetes",
+			MachineCIDR: "10.0.0.0/16",
+			ServiceCIDR: "172.30.0.0/16",
+			PodCIDR:     "10.128.0.0/14",
+			HostPrefix:  23,
 		},
 		Version:      "4.19.0",
 		ChannelGroup: v1beta2.Stable,
@@ -176,5 +176,3 @@ func fakeHcpOpenShiftClustersSpecWithDifferentNSG() HcpOpenShiftClustersSpec {
 	spec.NetworkSecurityGroupID = "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/different-nsg"
 	return spec
 }
-
- 

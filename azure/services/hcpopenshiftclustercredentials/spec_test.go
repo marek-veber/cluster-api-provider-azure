@@ -122,4 +122,4 @@ func fakeCredentialsSpec() HcpOpenShiftClusterCredentialsSpec {
 func fakeCredentialsSpecPointer() *HcpOpenShiftClusterCredentialsSpec {
 	spec := fakeCredentialsSpec()
 	return &spec
-} 
+}

@@ -21,6 +21,8 @@ import (
 	"context"
 	errorsCore "errors"
 	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -40,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
 
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -348,93 +349,6 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 	return ctrl.Result{}, nil
 }
 
-/*
-TODO: mveber - remove howto reconcile kubeconfig
-func (r *AROControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, aroControlPlane *cplane.AROControlPlane, cluster *clusterv1.Cluster, aroCluster *infrav2exp.AROCluster) (*time.Duration, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx,
-		"controllers.AROControlPlaneReconciler.reconcileKubeconfig",
-	)
-	defer done()
-
-	var secretRef *genruntime.SecretDestination
-	if aroCluster.Spec.Secrets != nil {
-		secretRef = aroCluster.Spec.Secrets.UserCredentials
-		if aroCluster.Spec.Secrets.AdminCredentials != nil {
-			secretRef = aroCluster.Spec.Secrets.AdminCredentials
-		}
-	}
-	if secretRef == nil {
-		return nil, reconcile.TerminalError(fmt.Errorf("AROCluster must define at least one of spec.operatorSpec.secrets.{userCredentials,adminCredentials}"))
-	}
-	aroKubeconfig := &corev1.Secret{}
-	err := r.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretRef.Name}, aroKubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch secret created by ARO: %w", err)
-	}
-
-	kubeconfigData := aroKubeconfig.Data[secretRef.Key]
-	var tokenExpiresIn *time.Duration
-
-	if aroCluster.Status.AadProfile != nil &&
-		ptr.Deref(aroCluster.Status.AadProfile.Managed, false) &&
-		ptr.Deref(aroCluster.Status.DisableLocalAccounts, false) {
-		if secretRef.Name == secret.Name(cluster.Name, secret.Kubeconfig) {
-			return nil, fmt.Errorf("ARO-generated kubeconfig Secret name cannot be %q when local accounts are disabled on the AROCluster, CAPZ must be able to create and manage its own Secret with that name in order to augment the kubeconfig without conflicting with ARO", secretRef.Name)
-		}
-
-		// Admin credentials cannot be retrieved when local accounts are disabled. Fetch a Bearer token like
-		// `kubelogin` would and set it in the kubeconfig to remove the need for that binary in CAPI controllers.
-		cred, err := r.CredentialCache.authTokenForAROResource(ctx, aroCluster)
-		if err != nil {
-			return nil, err
-		}
-		// magic string for AKS's managed Entra server ID: https://learn.microsoft.com/azure/aks/kubelogin-authentication#how-to-use-kubelogin-with-aks
-		token, err := cred.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{"6dae42f8-4368-4678-94ff-3960e28e3630/.default"}})
-		if err != nil {
-			return nil, err
-		}
-		tokenExpiresIn = ptr.To(time.Until(token.ExpiresOn))
-		log.V(4).Info("retrieved access token", "expiresOn", token.ExpiresOn, "expiresIn", tokenExpiresIn)
-
-		kubeconfig, err := clientcmd.Load(kubeconfigData)
-		if err != nil {
-			return nil, err
-		}
-		for _, a := range kubeconfig.AuthInfos {
-			a.Exec = nil
-			a.Token = token.Token
-		}
-		kubeconfigData, err = clientcmd.Write(*kubeconfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	expectedSecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
-			Namespace: cluster.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(aroControlPlane, infrav2exp.GroupVersion.WithKind(cplane.AROControlPlaneKind)),
-			},
-			Labels: map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
-		},
-		Data: map[string][]byte{
-			secret.KubeconfigDataName: kubeconfigData,
-		},
-	}
-
-	err = r.Patch(ctx, expectedSecret, client.Apply, client.FieldOwner("capz-manager"), client.ForceOwnership)
-	if err != nil {
-		return nil, err
-	}
-	return tokenExpiresIn, nil
-}
-*/
 
 func (r *AROControlPlaneReconciler) reconcilePaused(ctx context.Context, scope *scope.AROControlPlaneScope) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AROControlPlaneReconciler.reconcilePaused")
