@@ -23,6 +23,10 @@ spec:
       jsonPath: .status.ready
       name: Ready
       type: string
+    - description: Control plane infrastructure is provisioned
+      jsonPath: .status.initialization.provisioned
+      name: Provisioned
+      type: boolean
     - description: Number of replicas
       jsonPath: .status.replicas
       name: Replicas
