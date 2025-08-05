@@ -55,6 +55,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const (
+	// aroControlPlaneScopeName is the sourceName, or more specifically the UserAgent, of client used to store the Cluster Info configmap.
+	aroControlPlaneScopeName = "arocontrolplane-scope"
+)
+
 // AROControlPlaneScopeParams defines the input parameters used to create a new Scope.
 type AROControlPlaneScopeParams struct {
 	AzureClients
@@ -272,7 +277,7 @@ func (s *AROControlPlaneScope) HasValidKubeconfig(ctx context.Context) bool {
 		return false
 	}
 
-	remoteClient, err := remote.NewClusterClient(ctx, managedControlPlaneScopeName, s.Client, types.NamespacedName{
+	remoteClient, err := remote.NewClusterClient(ctx, aroControlPlaneScopeName, s.Client, types.NamespacedName{
 		Namespace: s.Cluster.Namespace,
 		Name:      s.Cluster.Name,
 	})
@@ -358,7 +363,7 @@ func (s *AROControlPlaneScope) MakeClusterCA() *corev1.Secret {
 			Name:      secret.Name(s.Cluster.Name, secret.ClusterCA),
 			Namespace: s.Cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(s.ControlPlane, infrav1.GroupVersion.WithKind(infrav1.AzureManagedControlPlaneKind)),
+				*metav1.NewControllerRef(s.ControlPlane, cplane.GroupVersion.WithKind(cplane.AROControlPlaneKind)),
 			},
 		},
 	}
@@ -366,7 +371,7 @@ func (s *AROControlPlaneScope) MakeClusterCA() *corev1.Secret {
 
 // StoreClusterInfo stores the discovery cluster-info configmap in the kube-public namespace on the AKS cluster so kubeadm can access it to join nodes.
 func (s *AROControlPlaneScope) StoreClusterInfo(ctx context.Context, caData []byte) error {
-	remoteclient, err := remote.NewClusterClient(ctx, managedControlPlaneScopeName, s.Client, types.NamespacedName{
+	remoteclient, err := remote.NewClusterClient(ctx, aroControlPlaneScopeName, s.Client, types.NamespacedName{
 		Namespace: s.Cluster.Namespace,
 		Name:      s.Cluster.Name,
 	})
