@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 
 	"github.com/Azure/azure-service-operator/v2/pkg/genruntime/conditions"
 	"github.com/go-logr/logr"
@@ -35,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/mutators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -53,8 +53,8 @@ type watcher interface {
 
 type resourceStatusObject interface {
 	client.Object
-	GetResourceStatuses() []v1beta1.ResourceStatus
-	SetResourceStatuses([]v1beta1.ResourceStatus)
+	GetResourceStatuses() []infrav1.ResourceStatus
+	SetResourceStatuses([]infrav1.ResourceStatus)
 }
 
 // Reconcile creates or updates the specified resources.
@@ -63,7 +63,7 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 	defer done()
 	log.V(4).Info("reconciling resources")
 
-	var newResourceStatuses []v1beta1.ResourceStatus
+	var newResourceStatuses []infrav1.ResourceStatus
 
 	for _, spec := range r.resources {
 		gvk := spec.GroupVersionKind()
@@ -89,8 +89,8 @@ func (r *ResourceReconciler) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to get ready status: %w", err)
 		}
-		newResourceStatuses = append(newResourceStatuses, v1beta1.ResourceStatus{
-			Resource: v1beta1.StatusResource{
+		newResourceStatuses = append(newResourceStatuses, infrav1.ResourceStatus{
+			Resource: infrav1.StatusResource{
 				Group:   gvk.Group,
 				Version: gvk.Version,
 				Kind:    gvk.Kind,
@@ -163,7 +163,7 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 	defer done()
 	log.V(4).Info("deleting resources")
 
-	var newResourceStatuses []v1beta1.ResourceStatus
+	var newResourceStatuses []infrav1.ResourceStatus
 
 	for _, spec := range r.owner.GetResourceStatuses() {
 		newStatus, err := r.deleteResource(ctx, spec.Resource)
@@ -180,7 +180,7 @@ func (r *ResourceReconciler) Delete(ctx context.Context) error {
 	return nil
 }
 
-func (r *ResourceReconciler) deleteResource(ctx context.Context, resource v1beta1.StatusResource) (*v1beta1.ResourceStatus, error) {
+func (r *ResourceReconciler) deleteResource(ctx context.Context, resource infrav1.StatusResource) (*infrav1.ResourceStatus, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.ResourceReconciler.deleteResource")
 	defer done()
 
@@ -214,7 +214,7 @@ func (r *ResourceReconciler) deleteResource(ctx context.Context, resource v1beta
 		return nil, fmt.Errorf("failed to get ready status: %w", err)
 	}
 
-	return &v1beta1.ResourceStatus{
+	return &infrav1.ResourceStatus{
 		Resource: resource,
 		Ready:    ready,
 	}, nil

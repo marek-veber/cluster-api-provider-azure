@@ -160,28 +160,6 @@ func (s *aroControlPlaneService) delete(ctx context.Context) error {
 	return nil
 }
 
-/*
-// setFailureDomainsForLocation sets the AROControlPlane Status failure domains based on which Azure Availability Zones are available in the cluster location.
-// Note that this is not done in a webhook as it requires API calls to fetch the availability zones.
-func (s *aroControlPlaneService) setFailureDomainsForLocation(ctx context.Context) error {
-	if s.scope.ExtendedLocation() != nil {
-		return nil
-	}
-
-	zones, err := s.skuCache.GetZones(ctx, s.scope.Location())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get zones for location %s", s.scope.Location())
-	}
-
-	for _, zone := range zones {
-		s.scope.SetFailureDomain(zone, clusterv1.FailureDomainSpec{
-			ControlPlane: true,
-		})
-	}
-
-	return nil
-}
-*/
 
 func (s *aroControlPlaneService) reconcileKubeconfig(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.ControlPlaneService.reconcileKubeconfig")

@@ -18,8 +18,10 @@ package hcpopenshiftclusters
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
+
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
@@ -57,7 +59,7 @@ func (s *HcpOpenShiftClustersSpec) OwnerResourceName() string {
 	return s.Name
 }
 
-// getManagedIdentities converts managed identities
+// getManagedIdentities converts managed identities.
 func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedIdentitiesProfile, *arohcp.ManagedServiceIdentity) {
 	managedServiceIdentityType := arohcp.ManagedServiceIdentityTypeUserAssigned
 	userAssignedIdentities := &arohcp.UserAssignedIdentitiesProfile{
@@ -102,7 +104,7 @@ func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedI
 	return userAssignedIdentities, managedServiceIdentity
 }
 
-// getTags - convert AdditionalTags
+// getTags - convert AdditionalTags.
 func (s *HcpOpenShiftClustersSpec) getTags() map[string]*string {
 	ret := map[string]*string{}
 	for k, v := range s.AdditionalTags {
@@ -111,12 +113,12 @@ func (s *HcpOpenShiftClustersSpec) getTags() map[string]*string {
 	return ret
 }
 
-// getManagedResourceGroup - returns manager resource group name
+// getManagedResourceGroup - returns manager resource group name.
 func (s *HcpOpenShiftClustersSpec) getManagedResourceGroup() *string {
 	return &s.NodeResourceGroup
 }
 
-// getManagedResourceGroup - returns manager resource group name
+// getManagedResourceGroup - returns manager resource group name.
 func (s *HcpOpenShiftClustersSpec) getOutboundType() (*arohcp.OutboundType, error) {
 	if s.OutboundType == "LoadBalancer" {
 		outboundType := arohcp.OutboundTypeLoadBalancer
@@ -125,7 +127,7 @@ func (s *HcpOpenShiftClustersSpec) getOutboundType() (*arohcp.OutboundType, erro
 	return nil, errors.Errorf("unsupported outbound type %s", s.OutboundType)
 }
 
-// getNetworkType - returns network type
+// getNetworkType - returns network type.
 func (s *HcpOpenShiftClustersSpec) getNetworkType() (*arohcp.NetworkType, error) {
 	if s.Network.NetworkType == "OVNKubernetes" {
 		networkType := arohcp.NetworkTypeOVNKubernetes
@@ -138,7 +140,7 @@ func (s *HcpOpenShiftClustersSpec) getNetworkType() (*arohcp.NetworkType, error)
 	return nil, errors.Errorf("unsupported network type %s", s.Network.NetworkType)
 }
 
-// getVisibility - returns visibility type
+// getVisibility - returns visibility type.
 func (s *HcpOpenShiftClustersSpec) getVisibility() (*arohcp.Visibility, error) {
 	if s.Visibility == "Private" {
 		visibility := arohcp.VisibilityPrivate

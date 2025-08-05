@@ -28,13 +28,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	controlv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
-	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 var (
 	// ErrNoAROClusterDefined describes an AROControlPlane without a AROCluster.
-	ErrNoAROClusterDefined = fmt.Errorf("no %s AROCluster defined in AROControlPlane spec.resources", expv1beta1.GroupVersion.Group)
+	ErrNoAROClusterDefined = fmt.Errorf("no %s AROCluster defined in AROControlPlane spec.resources", infrav1exp.GroupVersion.Group)
 )
 
 // SetAROClusterDefaults propagates values defined by Cluster API to an ARO AROCluster.
@@ -46,7 +46,7 @@ func SetAROClusterDefaults(ctrlClient client.Client, aroControlPlane *controlv1.
 		var aroCluster *unstructured.Unstructured
 		var aroClusterPath string
 		for i, u := range us {
-			if u.GroupVersionKind().Group == expv1beta1.GroupVersion.Group &&
+			if u.GroupVersionKind().Group == infrav1exp.GroupVersion.Group &&
 				u.GroupVersionKind().Kind == "AROCluster" {
 				aroCluster = u
 				aroClusterPath = fmt.Sprintf("spec.resources[%d]", i)

@@ -66,7 +66,7 @@ func (mw *aroMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) 
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
-	//m.Labels[LabelAgentPoolMode] = m.Spec.Mode
+	// m.Labels[LabelAgentPoolMode] = m.Spec.Mode
 
 	if m.Spec.NodePoolName == "" {
 		m.Spec.NodePoolName = m.Name

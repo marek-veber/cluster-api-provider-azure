@@ -18,8 +18,15 @@ package scope
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftnodepools"
@@ -28,11 +35,6 @@ import (
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AROMachinePoolScopeParams defines the input parameters used to create a new Scope.
@@ -244,7 +246,7 @@ func (s *AROMachinePoolScope) PatchObject(ctx context.Context) error {
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			v1beta2.AROMachinePoolReadyCondition,
-			//v1beta2.AROMachinePoolValidCondition,
+			// v1beta2.AROMachinePoolValidCondition,
 			//v1beta2.AROMachinePoolUpgradingCondition,
 		}})
 }
@@ -292,7 +294,7 @@ func (s *AROMachinePoolScope) Name() string {
 	return s.InfraMachinePool.Name
 }
 
-// Location returns location
+// Location returns location.
 func (s *AROMachinePoolScope) Location() string {
 	return s.ControlPlane.Spec.Platform.Location
 }

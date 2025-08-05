@@ -18,6 +18,7 @@ package hcpopenshiftclustercredentials
 
 import (
 	"context"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 

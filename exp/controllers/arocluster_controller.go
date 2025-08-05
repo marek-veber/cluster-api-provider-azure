@@ -20,23 +20,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-logr/logr"
-	"k8s.io/klog/v2"
 	"net/url"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strconv"
 	"strings"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
+	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,7 +41,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infra "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -268,12 +267,12 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 	aroCluster.Status.Ready = aroControlPlane.Status.Ready && !aroCluster.Spec.ControlPlaneEndpoint.IsZero()
 	if aroCluster.Status.Ready {
 		aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: true}
-		conditions.MarkTrue(aroCluster, v1beta1.NetworkInfrastructureReadyCondition)
+		conditions.MarkTrue(aroCluster, infrav1.NetworkInfrastructureReadyCondition)
 	} else {
 		if aroCluster.Status.Initialization == nil {
 			aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: false}
 		}
-		conditions.MarkFalse(aroCluster, v1beta1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+		conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
 	}
 	conditions.SetSummary(aroCluster)
 

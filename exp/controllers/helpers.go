@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
-	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -42,7 +40,9 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 

@@ -19,18 +19,17 @@ package hcpopenshiftclusters
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
-
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
-
-	//infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -271,7 +270,7 @@ func (s *Service) checkUserAssignedIdentities(ctx context.Context, log logr.Logg
 		}
 	}
 
-	for providerID, _ := range usedIdentities {
+	for providerID := range usedIdentities {
 		identitiesClient := s.identitiesGetter
 		parsed, err := azureutil.ParseResourceID(providerID)
 		if err != nil {

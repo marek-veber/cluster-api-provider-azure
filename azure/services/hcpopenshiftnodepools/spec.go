@@ -18,12 +18,14 @@ package hcpopenshiftnodepools
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
 // HcpOpenShiftNodePoolSpec defines the specification for a NodePool.
@@ -69,7 +71,7 @@ func (s *HcpOpenShiftNodePoolSpec) getDiskStorageAccountType() (*arohcp.DiskStor
 	return nil, errors.Errorf("unsupported DiskStorageAccountType %s", s.AROMachinePoolSpec.Platform.DiskStorageAccountType)
 }
 
-// getAvailabilityZone - converts AvailabilityZone
+// getAvailabilityZone - converts AvailabilityZone.
 func (s *HcpOpenShiftNodePoolSpec) getAvailabilityZone() *string {
 	if s.AROMachinePoolSpec.Platform.AvailabilityZone == "" {
 		return nil
@@ -150,7 +152,7 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(_ context.Context, existing interf
 		//	UserAssignedIdentities: nil,
 		//	PrincipalID:            nil,
 		//	TenantID:               nil,
-		//},
+		// },
 		Properties: &arohcp.NodePoolProperties{
 			Platform: &arohcp.NodePoolPlatformProfile{
 				VMSize:                 ptr.To(s.AROMachinePoolSpec.Platform.VMSize),

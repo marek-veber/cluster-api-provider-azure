@@ -19,18 +19,18 @@ package hcpopenshiftclustercredentials
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	cloudprovider "k8s.io/cloud-provider"
 	"net/http"
 	"time"
 
-	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/pkg/errors"
+	cloudprovider "k8s.io/cloud-provider"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
+	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -76,7 +76,7 @@ func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClien
 	if isDevel {
 		opts.InsecureAllowCredentialWithHTTP = true
 		opts.Cloud.Services = map[cloud.ServiceName]cloud.ServiceConfiguration{
-			"resourceManager": cloud.ServiceConfiguration{
+			"resourceManager": {
 				Audience: opts.Cloud.Services["resourceManager"].Audience,
 				Endpoint: "http://192.168.122.1:8443/",
 			},
