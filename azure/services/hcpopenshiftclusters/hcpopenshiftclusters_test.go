@@ -359,6 +359,9 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 				OutboundType:         &outboundType,
 			},
 			DNS: &arohcp.DNSProfile{},
+			ClusterImageRegistry: &arohcp.ClusterImageRegistryProfile{
+				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled),
+			},
 			Network: &arohcp.NetworkProfile{
 				NetworkType: &networkType,
 				HostPrefix:  ptr.To(int32(23)),

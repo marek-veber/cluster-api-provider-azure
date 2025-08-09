@@ -34,12 +34,7 @@ import (
 )
 
 var (
-	ocpSemver                  = regexp.MustCompile(`^openshift-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
-	kubeSemver                 = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
-	rMaxNodeProvisionTime      = regexp.MustCompile(`^(\d+)m$`)
-	rScaleDownTime             = regexp.MustCompile(`^(\d+)m$`)
-	rScaleDownDelayAfterDelete = regexp.MustCompile(`^(\d+)s$`)
-	rScanInterval              = regexp.MustCompile(`^(\d+)s$`)
+	ocpSemver = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 )
 
 // SetupAROControlPlaneWebhookWithManager sets up and registers the webhook with the manager.
@@ -68,20 +63,6 @@ func (mw *aroControlPlaneWebhook) Default(_ context.Context, obj runtime.Object)
 
 	m.Spec.Version = setDefaultOCPVersion(m.Spec.Version)
 
-	/*
-
-		if err := m.setDefaultSSHPublicKey(); err != nil {
-			ctrl.Log.WithName("AROControlPlaneWebHookLogger").Error(err, "setDefaultSSHPublicKey failed")
-		}
-
-		m.setDefaultResourceGroupName()
-		m.setDefaultNodeResourceGroupName()
-		m.setDefaultVirtualNetwork()
-		m.setDefaultSubnet()
-		m.setDefaultOIDCIssuerProfile()
-		m.setDefaultDNSPrefix()
-		m.setDefaultAKSExtensions()
-	*/
 	return nil
 }
 
@@ -227,7 +208,7 @@ func (m *AROControlPlane) validateDNSPrefix(_ client.Client) field.ErrorList {
 func validateOCPVersion(version string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if !ocpSemver.MatchString(version) {
-		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a openshift-<valid semantic version>"))
+		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a <valid semantic version>"))
 	}
 
 	return allErrs
@@ -342,12 +323,12 @@ func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 }
 
 func setDefaultOCPVersion(version string) string {
-	if version != "" && !strings.HasPrefix(version, "openshift-v") && strings.HasPrefix(version, "v") {
-		normalizedVersion := "openshift-" + version
+	if strings.HasPrefix(version, "openshift-v") {
+		normalizedVersion := version[11:]
 		version = normalizedVersion
 	}
-	if version != "" && !strings.HasPrefix(version, "openshift-v") {
-		normalizedVersion := "openshift-v" + version
+	if strings.HasPrefix(version, "v") {
+		normalizedVersion := version[1:]
 		version = normalizedVersion
 	}
 	return version

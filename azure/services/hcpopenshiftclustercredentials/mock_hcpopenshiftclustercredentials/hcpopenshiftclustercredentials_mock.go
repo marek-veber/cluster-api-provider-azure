@@ -61,6 +61,20 @@ func (m *MockHcpOpenShiftClusterCredentialScope) EXPECT() *MockHcpOpenShiftClust
 	return m.recorder
 }
 
+// AnnotateKubeconfigInvalid mocks base method.
+func (m *MockHcpOpenShiftClusterCredentialScope) AnnotateKubeconfigInvalid(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnnotateKubeconfigInvalid", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnotateKubeconfigInvalid indicates an expected call of AnnotateKubeconfigInvalid.
+func (mr *MockHcpOpenShiftClusterCredentialScopeMockRecorder) AnnotateKubeconfigInvalid(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnotateKubeconfigInvalid", reflect.TypeOf((*MockHcpOpenShiftClusterCredentialScope)(nil).AnnotateKubeconfigInvalid), ctx)
+}
+
 // BaseURI mocks base method.
 func (m *MockHcpOpenShiftClusterCredentialScope) BaseURI() string {
 	m.ctrl.T.Helper()
@@ -235,6 +249,20 @@ func (m *MockHcpOpenShiftClusterCredentialScope) SetLongRunningOperationState(ar
 func (mr *MockHcpOpenShiftClusterCredentialScopeMockRecorder) SetLongRunningOperationState(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockHcpOpenShiftClusterCredentialScope)(nil).SetLongRunningOperationState), arg0)
+}
+
+// ShouldReconcileKubeconfig mocks base method.
+func (m *MockHcpOpenShiftClusterCredentialScope) ShouldReconcileKubeconfig(ctx context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShouldReconcileKubeconfig", ctx)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ShouldReconcileKubeconfig indicates an expected call of ShouldReconcileKubeconfig.
+func (mr *MockHcpOpenShiftClusterCredentialScopeMockRecorder) ShouldReconcileKubeconfig(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldReconcileKubeconfig", reflect.TypeOf((*MockHcpOpenShiftClusterCredentialScope)(nil).ShouldReconcileKubeconfig), ctx)
 }
 
 // SubscriptionID mocks base method.

@@ -18,6 +18,9 @@ package hcpopenshiftclusters
 
 import (
 	"context"
+	"fmt"
+
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -154,7 +157,10 @@ func (s *HcpOpenShiftClustersSpec) getVisibility() (*arohcp.Visibility, error) {
 }
 
 // Parameters returns the parameters for the HcpOpenShiftCluster.
-func (s *HcpOpenShiftClustersSpec) Parameters(_ context.Context, existing interface{}) (params interface{}, err error) {
+func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Parameters")
+	defer done()
+
 	var existingHcpOpenShiftCluster *arohcp.HcpOpenShiftCluster
 	if existing != nil {
 		hcpOpenShiftCluster, ok := existing.(arohcp.HcpOpenShiftCluster)
@@ -194,11 +200,16 @@ func (s *HcpOpenShiftClustersSpec) Parameters(_ context.Context, existing interf
 				OutboundType:         outboundType,
 				// IssuerURL:            nil,
 			},
+			//Autoscaling:          nil,
+			ClusterImageRegistry: &arohcp.ClusterImageRegistryProfile{
+				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled), // TODO: when Disabled
+			},
 			// Capabilities: &arohcp.ClusterCapabilitiesProfile{Disabled: nil},
 			DNS: &arohcp.DNSProfile{
 				// BaseDomainPrefix: nil,
 				// BaseDomain:       nil,
 			},
+			// Etcd: nil,
 			Network: &arohcp.NetworkProfile{
 				NetworkType: networkType,
 				HostPrefix:  ptr.To(int32(s.Network.HostPrefix)),
@@ -206,6 +217,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(_ context.Context, existing interf
 				PodCidr:     &s.Network.PodCIDR,
 				ServiceCidr: &s.Network.ServiceCIDR,
 			},
+			// NodeDrainTimeoutMinutes: nil,
 			Version: &arohcp.VersionProfile{
 				ChannelGroup: ptr.To(string(s.ChannelGroup)),
 				ID:           &s.Version,
@@ -225,86 +237,95 @@ func (s *HcpOpenShiftClustersSpec) Parameters(_ context.Context, existing interf
 	}
 	if existingHcpOpenShiftCluster != nil {
 		ret.ID = existingHcpOpenShiftCluster.ID
-		changed := false
-		//		if existingHcpOpenShiftCluster.Location == nil || *ret.Location != *existingHcpOpenShiftCluster.Location {
-		//			changed = true
-		//		}
+		changes := []string{}
+		immutable := []string{}
+		checkChange("location", existingHcpOpenShiftCluster.Location, ret.Location, &changes)
 		if existingHcpOpenShiftCluster.Properties == nil {
-			changed = true
+			changes = append(changes, "adding properties: nil -> new value")
 		} else {
 			if existingHcpOpenShiftCluster.Properties.Platform == nil {
-				changed = true
+				changes = append(changes, "adding properties.platform: nil -> new value")
 			} else {
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Platform.NetworkSecurityGroupID, ret.Properties.Platform.NetworkSecurityGroupID) {
-					return nil, errors.Errorf("The networkSecurityGroupId is immutable and cannot be changed")
-				}
-				if cmpOperatorsAuthentication(existingHcpOpenShiftCluster.Properties.Platform.OperatorsAuthentication, ret.Properties.Platform.OperatorsAuthentication) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Platform.SubnetID, ret.Properties.Platform.SubnetID) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Platform.ManagedResourceGroup, ret.Properties.Platform.ManagedResourceGroup) {
-					return nil, errors.Errorf("The managedResourceGroup is immutable and cannot be changed")
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Platform.OutboundType, ret.Properties.Platform.OutboundType) {
-					changed = true
-				}
+				checkImmutable("properties.platform.networkSecurityGroupId", &existingHcpOpenShiftCluster.Properties.Platform.NetworkSecurityGroupID, &ret.Properties.Platform.NetworkSecurityGroupID, &immutable)
+				checkChangeIdentities("properties.platform.operatorsAuthentication", existingHcpOpenShiftCluster.Properties.Platform.OperatorsAuthentication, ret.Properties.Platform.OperatorsAuthentication, &changes)
+				checkChange("properties.platform.subnetID", existingHcpOpenShiftCluster.Properties.Platform.SubnetID, ret.Properties.Platform.SubnetID, &changes)
+				checkImmutable("properties.platform.managedResourceGroup", &existingHcpOpenShiftCluster.Properties.Platform.ManagedResourceGroup, &ret.Properties.Platform.ManagedResourceGroup, &immutable)
+				checkChange("Properties.Platform.OutboundType", existingHcpOpenShiftCluster.Properties.Platform.OutboundType, ret.Properties.Platform.OutboundType, &changes)
 			}
 			if existingHcpOpenShiftCluster.Properties.Network == nil {
-				changed = true
+				changes = append(changes, "adding properties.network: nil -> new value")
 			} else {
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Network.NetworkType, ret.Properties.Network.NetworkType) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Network.HostPrefix, ret.Properties.Network.HostPrefix) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Network.MachineCidr, ret.Properties.Network.MachineCidr) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Network.PodCidr, ret.Properties.Network.PodCidr) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Network.ServiceCidr, ret.Properties.Network.ServiceCidr) {
-					changed = true
-				}
+				checkChange("properties.network.networkType", existingHcpOpenShiftCluster.Properties.Network.NetworkType, ret.Properties.Network.NetworkType, &changes)
+				checkChange("properties.network.hostPrefix", existingHcpOpenShiftCluster.Properties.Network.HostPrefix, ret.Properties.Network.HostPrefix, &changes)
+				checkChange("properties.network.machineCidr", existingHcpOpenShiftCluster.Properties.Network.MachineCidr, ret.Properties.Network.MachineCidr, &changes)
+				checkChange("properties.network.podCidr", existingHcpOpenShiftCluster.Properties.Network.PodCidr, ret.Properties.Network.PodCidr, &changes)
+				checkChange("properties.network.serviceCidr", existingHcpOpenShiftCluster.Properties.Network.ServiceCidr, ret.Properties.Network.ServiceCidr, &changes)
 			}
 			if existingHcpOpenShiftCluster.Properties.Version == nil {
-				changed = true
+				changes = append(changes, "adding properties.version: nil -> new value")
 			} else {
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Version.ChannelGroup, ret.Properties.Version.ChannelGroup) {
-					changed = true
-				}
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.Version.ID, ret.Properties.Version.ID) {
-					changed = true
-				}
+				checkImmutable("properties.version.id", &existingHcpOpenShiftCluster.Properties.Version.ID, &ret.Properties.Version.ID, &immutable)
+				checkImmutable("properties.version.channelGroup", &existingHcpOpenShiftCluster.Properties.Version.ChannelGroup, &ret.Properties.Version.ChannelGroup, &immutable)
 			}
 			if existingHcpOpenShiftCluster.Properties.API == nil {
-				changed = true
+				changes = append(changes, "adding properties.API: nil -> new value")
 			} else {
-				if cmpPtr(existingHcpOpenShiftCluster.Properties.API.Visibility, ret.Properties.API.Visibility) {
-					changed = true
-				}
+				checkChange("properties.api.Visibility", existingHcpOpenShiftCluster.Properties.API.Visibility, ret.Properties.API.Visibility, &changes)
 			}
-			if cmpMap(existingHcpOpenShiftCluster.Tags, ret.Tags) {
-				changed = true
-			}
+			checkChangeMap("properties.tags", existingHcpOpenShiftCluster.Tags, ret.Tags, &changes)
 		}
-		if !changed {
+		if len(immutable) > 0 {
+			for _, msg := range immutable {
+				log.Info(fmt.Sprintf("cannot update immutable field %s", msg))
+			}
+			return nil, errors.Errorf("immutable fields cannot be changed: %v", immutable)
+		}
+		if len(changes) == 0 {
 			return nil, nil
+		}
+		for _, msg := range changes {
+			log.Info(fmt.Sprintf("changing field %s", msg))
 		}
 	}
 	return ret, nil
 }
 
-func cmpMap(m1 map[string]*string, m2 map[string]*string) bool {
+func ptrToS(a any) string {
+	if a == nil {
+		return "nil"
+	}
+	switch msg := a.(type) {
+	case *string:
+		return fmt.Sprintf("%q", *msg)
+	case *int:
+		return fmt.Sprintf("%d", *msg)
+	default:
+		return fmt.Sprintf("%T:???", msg)
+	}
+}
+func checkChange[V comparable](path string, old, new *V, changes *[]string) bool {
+	if ptr.Equal(old, new) {
+		return false
+	}
+	*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(old), ptrToS(new)))
+	return true
+}
+func checkImmutable[V comparable](path string, old, new **V, changes *[]string) bool {
+	if checkChange(path, *old, *new, changes) {
+		*new = *old
+		return true
+	}
+	return false
+}
+func checkChangeMap(path string, m1 map[string]*string, m2 map[string]*string, changes *[]string) bool {
 	if len(m1) != len(m2) {
+		*changes = append(*changes, fmt.Sprintf("%s.len: %d -> %d", path, len(m1), len(m2)))
 		return true
 	}
 	if len(m1) > 0 {
 		for k, v := range m1 {
-			if cmpPtr(m2[k], v) {
+			if !ptr.Equal(m2[k], v) {
+				*changes = append(*changes, fmt.Sprintf("%s[%q]: %s -> %s", path, k, ptrToS(v), ptrToS(m2[k])))
 				return true
 			}
 		}
@@ -312,22 +333,10 @@ func cmpMap(m1 map[string]*string, m2 map[string]*string) bool {
 	return false
 }
 
-func cmpOperatorsAuthentication(a1 *arohcp.OperatorsAuthenticationProfile, a2 *arohcp.OperatorsAuthenticationProfile) bool {
+func checkChangeIdentities(path string, a1 *arohcp.OperatorsAuthenticationProfile, a2 *arohcp.OperatorsAuthenticationProfile, changes *[]string) bool {
 	j1, _ := a1.MarshalJSON()
 	j2, _ := a2.MarshalJSON()
 	s1 := string(j1)
 	s2 := string(j2)
 	return s1 != s2
-}
-
-func cmpPtr[V string | bool | int32 | arohcp.OutboundType | arohcp.NetworkType | arohcp.Visibility](s1 *V, s2 *V) bool {
-	if (s1 == nil) != (s2 == nil) {
-		return true
-	}
-	if (s1 != nil) && (s2 != nil) {
-		if *s1 != *s2 {
-			return true
-		}
-	}
-	return false
 }

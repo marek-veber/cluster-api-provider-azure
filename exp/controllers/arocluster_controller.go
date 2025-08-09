@@ -96,8 +96,8 @@ func (r *AROClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 					UpdateFunc: func(ev event.UpdateEvent) bool {
 						oldControlPlane := ev.ObjectOld.(*cplane.AROControlPlane)
 						newControlPlane := ev.ObjectNew.(*cplane.AROControlPlane)
-						return oldControlPlane.Status.APIURL !=
-							newControlPlane.Status.APIURL
+						return (oldControlPlane.Status.APIURL != newControlPlane.Status.APIURL) ||
+							(oldControlPlane.Status.Ready != newControlPlane.Status.Ready)
 					},
 				},
 			),
@@ -272,7 +272,11 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 		if aroCluster.Status.Initialization == nil {
 			aroCluster.Status.Initialization = &infra.AROClusterInitializationStatus{Provisioned: false}
 		}
-		conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+		if !aroCluster.Spec.ControlPlaneEndpoint.IsZero() {
+			conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane port")
+		} else {
+			conditions.MarkFalse(aroCluster, infrav1.NetworkInfrastructureReadyCondition, "ExternallyManagedControlPlane", clusterv1.ConditionSeverityInfo, "Waiting for the Control Plane to get ready")
+		}
 	}
 	conditions.SetSummary(aroCluster)
 

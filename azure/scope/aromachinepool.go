@@ -215,7 +215,6 @@ func (s *AROMachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionTyp
 
 // AROMachinePoolCache stores AROMachinePoolCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
 type AROMachinePoolCache struct {
-	isVnetManaged *bool
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
@@ -305,7 +304,7 @@ func (s *AROMachinePoolScope) ResourceGroup() string {
 }
 
 func (s *AROMachinePoolScope) NodeResourceGroup() string {
-	return s.ControlPlane.Spec.Platform.NodeResourceGroup()
+	return s.ControlPlane.NodeResourceGroup()
 }
 
 // ClusterName returns the cluster name.

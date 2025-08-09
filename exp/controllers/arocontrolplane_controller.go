@@ -25,11 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -43,13 +38,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	infrav2exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 const (
-	aroControlPlaneKind = "AROControlPlane"
 	// AROControlPlaneFinalizer allows the controller to clean up resources on delete.
 	AROControlPlaneFinalizer = "arocontrolplane.controlplane.cluster.x-k8s.io"
 
@@ -62,19 +61,6 @@ const (
 
 var errInvalidClusterKind = errors.New("AROControlPlane cannot be used without AROCluster")
 var ErrNoAROClusterDefined = fmt.Errorf("no %s AROCluster defined in AROControlPlane spec.resources", infrav2exp.GroupVersion.Group)
-
-type aroResourceReconciler interface {
-	// Reconcile reconciles resources defined by this object and updates this object's status to reflect the
-	// state of the specified resources.
-	Reconcile(context.Context) error
-
-	// Pause stops ARO from continuously reconciling the specified resources.
-	Pause(context.Context) error
-
-	// Delete begins deleting the specified resources and updates the object's status to reflect the state of
-	// the specified resources.
-	Delete(context.Context) error
-}
 
 // AROControlPlaneReconciler reconciles a AROControlPlane object.
 type AROControlPlaneReconciler struct {
@@ -322,16 +308,13 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 	if scope.ControlPlane.Status.Initialization == nil || !scope.ControlPlane.Status.Initialization.ControlPlaneInitialized {
 		scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: scope.ControlPlane.Status.Ready}
 	}
-
 	/*
 		aroCluster := &infrav2exp.AROCluster{}
 		errGet := r.Get(ctx, client.ObjectKey{Namespace: aroControlPlane.Namespace, Name: aroControlPlane.Spec.AroClusterName}, aroCluster)
 		if errGet != nil {
 			return ctrl.Result{}, fmt.Errorf("error getting AroCluster: %w", errGet)
 		}
-	*/
 
-	/*
 			tokenExpiresIn, err := r.reconcileKubeconfig(ctx, aroControlPlane, cluster, aroCluster)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to reconcile kubeconfig: %w", err)
@@ -341,14 +324,10 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 			}
 			// ensure we refresh the token when it expires
 			result := ctrl.Result{RequeueAfter: ptr.Deref(tokenExpiresIn, 0)}
-
-		aroControlPlane.Status.Ready = aroControlPlane.Status.APIURL != ""
-		aroControlPlane.Status.Initialized = aroControlPlane.Status.Ready
 	*/
 
 	return ctrl.Result{}, nil
 }
-
 
 func (r *AROControlPlaneReconciler) reconcilePaused(ctx context.Context, scope *scope.AROControlPlaneScope) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AROControlPlaneReconciler.reconcilePaused")

@@ -48,17 +48,15 @@ func TestParameters(t *testing.T) {
 		{
 			name: "returns spec parameters with different values",
 			spec: HcpOpenShiftClusterCredentialsSpec{
-				Name:               "different-cluster",
-				ResourceGroup:      "different-rg",
-				APIURI:             "https://different.example.com",
-				HasValidKubeconfig: true,
+				Name:          "different-cluster",
+				ResourceGroup: "different-rg",
+				APIURI:        "https://different.example.com",
 			},
 			existing: nil,
 			expected: &HcpOpenShiftClusterCredentialsSpec{
-				Name:               "different-cluster",
-				ResourceGroup:      "different-rg",
-				APIURI:             "https://different.example.com",
-				HasValidKubeconfig: true,
+				Name:          "different-cluster",
+				ResourceGroup: "different-rg",
+				APIURI:        "https://different.example.com",
 			},
 		},
 	}
@@ -112,10 +110,9 @@ func TestOwnerResourceName(t *testing.T) {
 
 func fakeCredentialsSpec() HcpOpenShiftClusterCredentialsSpec {
 	return HcpOpenShiftClusterCredentialsSpec{
-		Name:               "test-cluster",
-		ResourceGroup:      "test-rg",
-		APIURI:             "https://api.test-cluster.example.com",
-		HasValidKubeconfig: false,
+		Name:          "test-cluster",
+		ResourceGroup: "test-rg",
+		APIURI:        "https://api.test-cluster.example.com",
 	}
 }
 

@@ -56,13 +56,12 @@ export AZURE_CLIENT_ID_USER_ASSIGNED_IDENTITY="${AZURE_CLIENT_ID_USER_ASSIGNED_I
 export AZURE_IDENTITY_ID_FILEPATH="${AZURE_IDENTITY_ID_FILEPATH:-$REPO_ROOT/azure_identity_id}"
 make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}"
 
-set -x
 # Export desired cluster name; default is "capz"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
 CONFORMANCE_FLAVOR="${CONFORMANCE_FLAVOR:-}"
 export KIND_CLUSTER_NAME
 
-if [[ "$("${KIND}" get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
+if [[ "$("${KIND}" get clusters)" =~ "^${KIND_CLUSTER_NAME}\$" ]]; then
   echo "cluster already exists, moving on"
   exit 0
 fi
@@ -128,12 +127,12 @@ function checkAZWIENVPreReqsAndCreateFiles() {
         sleep 5
       done
       echo "Configuring storage account '${AZWI_STORAGE_ACCOUNT}' as static website"
-      az storage blob service-properties update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website 
+      az storage blob service-properties update --account-name "${AZWI_STORAGE_ACCOUNT}" --static-website --auth-mode login
     fi
 
-    if ! az storage container show --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}"  > /dev/null 2>&1; then
+    if ! az storage container show --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --auth-mode login > /dev/null 2>&1; then
       echo "Creating storage container '${AZWI_STORAGE_CONTAINER}' in '${AZWI_STORAGE_ACCOUNT}'"
-      az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors 
+      az storage container create --name "${AZWI_STORAGE_CONTAINER}" --account-name "${AZWI_STORAGE_ACCOUNT}" --output none --only-show-errors --auth-mode login
     fi
 
     SERVICE_ACCOUNT_ISSUER=$(az storage account show --name "${AZWI_STORAGE_ACCOUNT}" --resource-group "${AZWI_RESOURCE_GROUP}" -o json | jq -r .primaryEndpoints.web)
@@ -216,7 +215,7 @@ function upload_to_blob() {
       --name "${blob_name}" \
       --account-name "${AZWI_STORAGE_ACCOUNT}" \
       --output none --only-show-errors \
-      
+      --auth-mode login
 }
 
 # This function create a kind cluster for Workload identity which requires key pairs path

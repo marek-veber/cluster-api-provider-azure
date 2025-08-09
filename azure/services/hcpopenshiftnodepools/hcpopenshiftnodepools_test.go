@@ -103,7 +103,12 @@ func TestReconcileHcpOpenShiftNodePool(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				fakeSpec := fakeHcpOpenShiftNodePoolSpec()
 				s.NodePoolSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeSpec)
-				m.Get(gomockinternal.AContext(), fakeSpec).Return(nil, internalError)
+				m.Get(gomockinternal.AContext(), fakeSpec).Return(nil, &azcore.ResponseError{
+					RawResponse: &http.Response{
+						Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+						StatusCode: http.StatusInternalServerError,
+					},
+				})
 				// No UpdatePutStatus call expected because function returns early on Get error
 			},
 		},
@@ -117,8 +122,14 @@ func TestReconcileHcpOpenShiftNodePool(t *testing.T) {
 				fakeSpec := fakeHcpOpenShiftNodePoolSpec()
 				s.NodePoolSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeSpec)
 				m.Get(gomockinternal.AContext(), fakeSpec).Return(nil, notFoundError)
-				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeSpec, serviceName).Return(nil, internalError)
-				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError)
+				createError := &azcore.ResponseError{
+					RawResponse: &http.Response{
+						Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+						StatusCode: http.StatusInternalServerError,
+					},
+				}
+				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeSpec, serviceName).Return(nil, createError)
+				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, createError)
 			},
 		},
 	}
@@ -184,9 +195,15 @@ func TestDeleteHcpOpenShiftNodePool(t *testing.T) {
 				s.DefaultedAzureServiceReconcileTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				fakeSpec := fakeHcpOpenShiftNodePoolSpec()
 				s.NodePoolSpecs(gomockinternal.AContext()).AnyTimes().Return(fakeSpec)
+				deleteError := &azcore.ResponseError{
+					RawResponse: &http.Response{
+						Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
+						StatusCode: http.StatusInternalServerError,
+					},
+				}
 				gomock.InOrder(
-					r.DeleteResource(gomockinternal.AContext(), fakeSpec, serviceName).Return(internalError),
-					s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, internalError),
+					r.DeleteResource(gomockinternal.AContext(), fakeSpec, serviceName).Return(deleteError),
+					s.UpdateDeleteStatus(infrav1.BootstrapSucceededCondition, serviceName, deleteError),
 				)
 			},
 		},

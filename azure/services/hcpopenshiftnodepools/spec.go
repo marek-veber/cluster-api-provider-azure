@@ -18,7 +18,6 @@ package hcpopenshiftnodepools
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -81,7 +80,7 @@ func (s *HcpOpenShiftNodePoolSpec) getAvailabilityZone() *string {
 
 // getAutoScaling converts Autoscaling.
 func (s *HcpOpenShiftNodePoolSpec) getAutoScaling() *arohcp.NodePoolAutoScaling {
-	if nil == s.AROMachinePoolSpec.Autoscaling {
+	if s.AROMachinePoolSpec.Autoscaling == nil {
 		return nil
 	}
 	return &arohcp.NodePoolAutoScaling{
@@ -100,7 +99,7 @@ func (s *HcpOpenShiftNodePoolSpec) getTaints() ([]*arohcp.Taint, error) {
 				effect = &e
 			}
 		}
-		if nil == effect {
+		if effect == nil {
 			return nil, errors.Errorf("no taint found for effect %s", t.Effect)
 		}
 		ret = append(ret, &arohcp.Taint{Effect: effect, Key: to.Ptr(t.Key), Value: to.Ptr(t.Value)})
@@ -144,7 +143,6 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(_ context.Context, existing interf
 	if autoScaling != nil {
 		replicas = nil
 	}
-
 	ret := arohcp.NodePool{
 		Location: ptr.To(s.Location),
 		//Identity: &arohcp.ManagedServiceIdentity{
@@ -185,35 +183,18 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(_ context.Context, existing interf
 	}
 	if existingNodePool != nil {
 		ret.ID = existingNodePool.ID
+		// we cannot change this
+		ret.Properties.Platform = existingNodePool.Properties.Platform
+		ret.Properties.AutoRepair = existingNodePool.Properties.AutoRepair
+
 		changed := false
+		// TODO: why is existingNodePool.Location == nil :(
 		//		if existingNodePool.Location == nil || *ret.Location != *existingNodePool.Location {
 		//			changed = true
 		//		}
 		if existingNodePool.Properties == nil {
 			changed = true
 		} else {
-			if existingNodePool.Properties.Platform == nil {
-				changed = true
-			} else {
-				if cmpPtr(existingNodePool.Properties.Platform.VMSize, ret.Properties.Platform.VMSize) {
-					changed = true
-				}
-				if cmpPtr(existingNodePool.Properties.Platform.AvailabilityZone, ret.Properties.Platform.AvailabilityZone) {
-					changed = true
-				}
-				if cmpPtr(existingNodePool.Properties.Platform.OSDisk.SizeGiB, ret.Properties.Platform.OSDisk.SizeGiB) {
-					changed = true
-				}
-				if cmpPtr(existingNodePool.Properties.Platform.OSDisk.DiskStorageAccountType, ret.Properties.Platform.OSDisk.DiskStorageAccountType) {
-					changed = true
-				}
-				if cmpPtr(existingNodePool.Properties.Platform.SubnetID, ret.Properties.Platform.SubnetID) {
-					changed = true
-				}
-			}
-			if cmpPtr(existingNodePool.Properties.AutoRepair, ret.Properties.AutoRepair) {
-				changed = true
-			}
 			if (existingNodePool.Properties.AutoScaling == nil) != (ret.Properties.AutoScaling == nil) {
 				changed = true
 			} else if (existingNodePool.Properties.AutoScaling != nil) && (ret.Properties.AutoScaling != nil) {

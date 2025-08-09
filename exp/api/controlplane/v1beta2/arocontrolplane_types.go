@@ -343,8 +343,8 @@ func (r *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
 
-func (s *AROPlatformProfileControlPlane) NodeResourceGroup() string {
-	nodeResourceGroup := fmt.Sprintf("capz_node_%s_rg", s.ResourceGroup)
+func (r *AROControlPlane) NodeResourceGroup() string {
+	nodeResourceGroup := fmt.Sprintf("capz_node_%s_%s_rg", r.Spec.AroClusterName, r.Spec.Platform.ResourceGroup)
 	return nodeResourceGroup
 }
 

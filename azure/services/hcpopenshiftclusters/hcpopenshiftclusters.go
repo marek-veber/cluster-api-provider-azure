@@ -19,7 +19,6 @@ package hcpopenshiftclusters
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 

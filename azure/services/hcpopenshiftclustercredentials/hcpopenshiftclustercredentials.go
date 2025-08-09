@@ -40,6 +40,8 @@ type (
 		azure.AsyncStatusUpdater
 		HcpOpenShiftClusterCredentialsSpecs(context.Context) azure.ResourceSpecGetter
 		SetKubeconfig(kubeconfig *string, timestamp *time.Time)
+		ShouldReconcileKubeconfig(ctx context.Context) bool
+		AnnotateKubeconfigInvalid(ctx context.Context) error
 	}
 
 	// Service provides operations on Azure resources.
@@ -95,8 +97,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Errorf("ARO ContrlolPlane not yet provisioned (Spec.APIURL is nil)")
 	}
 
-	// is ready
-	if hcpOpenShiftClusterCredentialsSpecs.HasValidKubeconfig {
+	if !s.Scope.ShouldReconcileKubeconfig(ctx) {
 		return nil
 	}
 
@@ -116,7 +117,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 //
 // Code later in the reconciler uses scope's hcpOpenShiftCluster state for determining HcpOpenShiftCluster status and whether to create/delete
 // HcpOpenShiftClusterAdminCredential.
-func (s *Service) updateScopeState(ctx context.Context, result interface{}, hcpOpenShiftClusterSpecs *HcpOpenShiftClusterCredentialsSpec) error {
+func (s *Service) updateScopeState(ctx context.Context, result interface{}, hcpOpenShiftClusterCredentialsSpecs *HcpOpenShiftClusterCredentialsSpec) error {
 	hcpOpenShiftClusterAdminCredential, ok := result.(arohcp.HcpOpenShiftClusterAdminCredential)
 	if !ok {
 		return errors.Errorf("%T is not an arohcp.HcpOpenShiftCluster", result)
@@ -126,29 +127,33 @@ func (s *Service) updateScopeState(ctx context.Context, result interface{}, hcpO
 	return nil
 }
 
-// Delete deletes a HcpOpenShiftCluster asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
+// Delete annotate kubeconfig
 // The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclustercredentials.Service.Delete")
+	defer done()
+	err := s.Scope.AnnotateKubeconfigInvalid(ctx)
+	if err != nil {
+		log.Error(err, "failed to invalidate kube config")
+	}
 	return nil
 	/* TODO: mveber - we don't need to revoke credentials before cluster's delete
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Service.Delete")
-	defer done()
 
 	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureServiceReconcileTimeout())
 	defer cancel()
 
 	spec := s.Scope.HcpOpenShiftClusterCredentialsSpecs(ctx)
-	hcpOpenShiftClusterSpecs, ok := spec.(*HcpOpenShiftClusterCredentialsSpec)
+	hcpOpenShiftClusterCredentialsSpecs, ok := spec.(*HcpOpenShiftClusterCredentialsSpec)
 	if !ok {
 		return errors.Errorf("%T is not a HcpOpenShiftClusterCredentialsSpecs", spec)
 	}
-	log.Info(fmt.Sprintf("Delete: %s", hcpOpenShiftClusterSpecs.Name))
+	log.Info(fmt.Sprintf("Delete: %s", hcpOpenShiftCredentialsClusterSpecs.Name))
 
-	// We go through the list of HcpOpenShiftClustersSpecs to delete each one, independently of the result of the previous one.
+	// We go through the list of HcpOpenShiftClusterCredentialsSpecs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
-	if err := s.DeleteResource(ctx, hcpOpenShiftClusterSpecs, serviceName); err != nil {
+	if err := s.DeleteResource(ctx, hcpOpenShiftClusterCredentialsSpecs, serviceName); err != nil {
 		if !azure.IsOperationNotDoneError(err) || result == nil {
 			result = err
 		}
@@ -163,25 +168,25 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	defer done()
 
 	spec := s.Scope.HcpOpenShiftClusterCredentialsSpecs(ctx)
-	hcpOpenShiftClusterSpecs, ok := spec.(*HcpOpenShiftClusterCredentialsSpec)
+	hcpOpenShiftClusterCredentialsSpec, ok := spec.(*HcpOpenShiftClusterCredentialsSpec)
 	if !ok {
 		return errors.Errorf("%T is not a HcpOpenShiftClusterCredentialsSpecs", spec)
 	}
-	log.Info(fmt.Sprintf("validateSpec: %s", hcpOpenShiftClusterSpecs.Name))
+	log.Info(fmt.Sprintf("validateSpec: %s", hcpOpenShiftClusterCredentialsSpec.Name))
 
 	/* TODO: mveber - remove
 	// Fetch location and zone to check for their support of ultra disks.
-	zones, err := s.resourceSKUCache.GetZones(ctx, hcpOpenShiftClusterSpecs.Location)
+	zones, err := s.resourceSKUCache.GetZones(ctx, hcpOpenShiftClusterCredentialsSpec.Location)
 	if err != nil {
-		return azure.WithTerminalError(errors.Wrapf(err, "failed to get the zones for location %s", hcpOpenShiftClusterSpecs.Location))
+		return azure.WithTerminalError(errors.Wrapf(err, "failed to get the zones for location %s", hcpOpenShiftClusterCredentialsSpec.Location))
 	}
 
 	for _, zone := range zones {
-		hasLocationCapability := sku.HasLocationCapability(resourceskus.UltraSSDAvailable, hcpOpenShiftClusterSpecs.Location, zone)
-		err := fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", hcpOpenShiftClusterSpecs.Size, hcpOpenShiftClusterSpecs.Location)
+		hasLocationCapability := sku.HasLocationCapability(resourceskus.UltraSSDAvailable, hcpOpenShiftClusterCredentialsSpec.Location, zone)
+		err := fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", hcpOpenShiftClusterCredentialsSpec.Size, hcpOpenShiftClusterCredentialsSpec.Location)
 
 		// Check support for ultra disks as data disks.
-		for _, disks := range hcpOpenShiftClusterSpecs.DataDisks {
+		for _, disks := range hcpOpenShiftClusterCredentialsSpec.DataDisks {
 			if disks.ManagedDisk != nil &&
 				disks.ManagedDisk.StorageAccountType == string(armcompute.StorageAccountTypesUltraSSDLRS) &&
 				!hasLocationCapability {
@@ -189,8 +194,8 @@ func (s *Service) validateSpec(ctx context.Context) error {
 			}
 		}
 		// Check support for ultra disks as persistent volumes.
-		if hcpOpenShiftClusterSpecs.AdditionalCapabilities != nil && hcpOpenShiftClusterSpecs.AdditionalCapabilities.UltraSSDEnabled != nil {
-			if *hcpOpenShiftClusterSpecs.AdditionalCapabilities.UltraSSDEnabled &&
+		if hcpOpenShiftClusterCredentialsSpec.AdditionalCapabilities != nil && hcpOpenShiftClusterCredentialsSpec.AdditionalCapabilities.UltraSSDEnabled != nil {
+			if *hcpOpenShiftClusterCredentialsSpec.AdditionalCapabilities.UltraSSDEnabled &&
 				!hasLocationCapability {
 				return azure.WithTerminalError(err)
 			}
@@ -198,11 +203,11 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	}
 
 	// Validate DiagnosticProfile spec
-	if hcpOpenShiftClusterSpecs.DiagnosticsProfile != nil && hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot != nil {
-		if hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot.StorageAccountType == infrav1.UserManagedDiagnosticsStorage {
-			if hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot.UserManaged == nil {
+	if hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile != nil && hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot != nil {
+		if hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot.StorageAccountType == infrav1.UserManagedDiagnosticsStorage {
+			if hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot.UserManaged == nil {
 				return azure.WithTerminalError(fmt.Errorf("userManaged must be specified when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage))
-			} else if hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot.UserManaged.StorageAccountURI == "" {
+			} else if hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot.UserManaged.StorageAccountURI == "" {
 				return azure.WithTerminalError(fmt.Errorf("storageAccountURI cannot be empty when storageAccountType is '%s'", infrav1.UserManagedDiagnosticsStorage))
 			}
 		}
@@ -213,21 +218,21 @@ func (s *Service) validateSpec(ctx context.Context) error {
 			string(infrav1.UserManagedDiagnosticsStorage),
 		}
 
-		if !slice.Contains(possibleStorageAccountTypeValues, string(hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot.StorageAccountType)) {
+		if !slice.Contains(possibleStorageAccountTypeValues, string(hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot.StorageAccountType)) {
 			return azure.WithTerminalError(fmt.Errorf("invalid storageAccountType: %s. Allowed values are %v",
-				hcpOpenShiftClusterSpecs.DiagnosticsProfile.Boot.StorageAccountType, possibleStorageAccountTypeValues))
+				hcpOpenShiftClusterCredentialsSpec.DiagnosticsProfile.Boot.StorageAccountType, possibleStorageAccountTypeValues))
 		}
 	}
 
 	// Checking if selected availability zones are available selected VM type in location
-	azsInLocation, err := s.resourceSKUCache.GetZonesWithVMSize(ctx, hcpOpenShiftClusterSpecs.Size, hcpOpenShiftClusterSpecs.Location)
+	azsInLocation, err := s.resourceSKUCache.GetZonesWithVMSize(ctx, hcpOpenShiftClusterCredentialsSpec.Size, hcpOpenShiftClusterCredentialsSpec.Location)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get zones for VM type %s in location %s", hcpOpenShiftClusterSpecs.Size, hcpOpenShiftClusterSpecs.Location)
+		return errors.Wrapf(err, "failed to get zones for VM type %s in location %s", hcpOpenShiftClusterCredentialsSpec.Size, hcpOpenShiftClusterCredentialsSpec.Location)
 	}
 
-	for _, az := range hcpOpenShiftClusterSpecs.FailureDomains {
+	for _, az := range hcpOpenShiftClusterCredentialsSpec.FailureDomains {
 		if !slice.Contains(azsInLocation, az) {
-			return azure.WithTerminalError(errors.Errorf("availability zone %s is not available for VM type %s in location %s", az, hcpOpenShiftClusterSpecs.Size, hcpOpenShiftClusterSpecs.Location))
+			return azure.WithTerminalError(errors.Errorf("availability zone %s is not available for VM type %s in location %s", az, hcpOpenShiftClusterCredentialsSpec.Size, hcpOpenShiftClusterCredentialsSpec.Location))
 		}
 	}
 	*/

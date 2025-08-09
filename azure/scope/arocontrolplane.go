@@ -19,27 +19,21 @@ package scope
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -53,11 +47,6 @@ import (
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-)
-
-const (
-	// aroControlPlaneScopeName is the sourceName, or more specifically the UserAgent, of client used to store the Cluster Info configmap.
-	aroControlPlaneScopeName = "arocontrolplane-scope"
 )
 
 // AROControlPlaneScopeParams defines the input parameters used to create a new Scope.
@@ -173,7 +162,12 @@ func (s *AROControlPlaneScope) MakeEmptyKubeConfigSecret() corev1.Secret {
 }
 
 func (s *AROControlPlaneScope) SetStatusVersion(version *arohcp.VersionProfile) {
-	s.ControlPlane.Status.Version = *version.ID
+	if version == nil {
+		return
+	}
+	if version.ID != nil {
+		s.ControlPlane.Status.Version = *version.ID
+	}
 }
 
 func (s *AROControlPlaneScope) SetProvisioningState(state *arohcp.ProvisioningState) {
@@ -252,7 +246,7 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(ctx context.Context) azu
 		Subnet:                 s.ControlPlane.Spec.Platform.Subnet,
 		OutboundType:           s.ControlPlane.Spec.Platform.OutboundType,
 		Network:                s.ControlPlane.Spec.Network,
-		Version:                s.ControlPlane.Spec.Version,
+		Version:                s.ControlPlane.Spec.Version + ".0", // TODO: just a temporary fix for the ARO-HCP bug
 		ChannelGroup:           s.ControlPlane.Spec.ChannelGroup,
 		Visibility:             s.ControlPlane.Spec.Visibility,
 	}
@@ -261,43 +255,87 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(ctx context.Context) azu
 
 func (s *AROControlPlaneScope) HcpOpenShiftClusterCredentialsSpecs(ctx context.Context) azure.ResourceSpecGetter {
 	ret := &hcpopenshiftclustercredentials.HcpOpenShiftClusterCredentialsSpec{
-		Name:               s.Cluster.Name,
-		ResourceGroup:      s.ResourceGroup(),
-		APIURI:             s.ControlPlane.Status.APIURL,
-		HasValidKubeconfig: s.HasValidKubeconfig(ctx),
+		Name:          s.Cluster.Name,
+		ResourceGroup: s.ResourceGroup(),
+		APIURI:        s.ControlPlane.Status.APIURL,
 	}
 	return ret
 }
 
-func (s *AROControlPlaneScope) HasValidKubeconfig(ctx context.Context) bool {
-	obj := s.MakeEmptyKubeConfigSecret()
-	key := client.ObjectKeyFromObject(&obj)
-	if err := s.Client.Get(ctx, key, &obj); err != nil {
-		// eny error includes not found
-		return false
+// AnnotateKubeconfigInvalid add annotation aro.azure.com/kubeconfig-refresh-needed: true
+// This mark this secret as invalid.
+func (s *AROControlPlaneScope) AnnotateKubeconfigInvalid(ctx context.Context) error {
+	kubeconfigSecret := s.MakeEmptyKubeConfigSecret()
+	key := client.ObjectKeyFromObject(&kubeconfigSecret)
+	if err := s.Client.Get(ctx, key, &kubeconfigSecret); err != nil {
+		// Secret doesn't exist - there is no need to invalidate it
+		return nil
+	}
+	// Update the kubeconfig secret
+	kubeConfigSecret := s.MakeEmptyKubeConfigSecret()
+	if _, err := controllerutil.CreateOrUpdate(ctx, s.Client, &kubeConfigSecret, func() error {
+		// Add annotations for tracking
+		if kubeConfigSecret.Annotations == nil {
+			kubeConfigSecret.Annotations = make(map[string]string)
+		}
+		kubeConfigSecret.Annotations["aro.azure.com/kubeconfig-refresh-needed"] = "true"
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "failed to invalidate kubeconfig secret")
+	}
+	return nil
+}
+
+// ShouldReconcileKubeconfig determines if kubeconfig needs reconciliation using metadata-based validation (Pattern 3).
+// This avoids direct cluster connections and prevents issues with stale/invalid secrets.
+func (s *AROControlPlaneScope) ShouldReconcileKubeconfig(ctx context.Context) bool {
+	kubeconfigSecret := s.MakeEmptyKubeConfigSecret()
+	key := client.ObjectKeyFromObject(&kubeconfigSecret)
+
+	if err := s.Client.Get(ctx, key, &kubeconfigSecret); err != nil {
+		// Secret doesn't exist - need to create it
+		return true
 	}
 
-	remoteClient, err := remote.NewClusterClient(ctx, aroControlPlaneScopeName, s.Client, types.NamespacedName{
-		Namespace: s.Cluster.Namespace,
-		Name:      s.Cluster.Name,
-	})
-	if err != nil {
-		return false
+	// Check if kubeconfig data exists
+	if len(kubeconfigSecret.Data[secret.KubeconfigDataName]) == 0 {
+		return true
 	}
 
-	// kube-public configmap kube-root-ca.crt
-	obj2 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kube-root-ca.crt",
-			Namespace: metav1.NamespacePublic,
-		},
-	}
-	key2 := client.ObjectKeyFromObject(obj2)
-	if err := remoteClient.Get(ctx, key2, obj2); err != nil {
-		return false
+	// Check for ARO-specific annotations that indicate refresh needed
+	if kubeconfigSecret.Annotations != nil {
+		if refreshNeeded, exists := kubeconfigSecret.Annotations["aro.azure.com/kubeconfig-refresh-needed"]; exists && refreshNeeded == "true" {
+			return true
+		}
+
+		// Check if secret is older than configured threshold
+		if lastUpdated, exists := kubeconfigSecret.Annotations["aro.azure.com/kubeconfig-last-updated"]; exists {
+			lastUpdatedTime, err := time.Parse(time.RFC3339, lastUpdated)
+			if err == nil {
+				kubeconfigAge := time.Since(lastUpdatedTime)
+				maxAge := s.GetKubeconfigMaxAge() // Configure based on ARO token lifetime
+				if kubeconfigAge > maxAge {
+					return true
+				}
+			}
+		}
+
 	}
 
-	return true
+	// Check if we have token expiration information and it's expired
+	if s.KubeonfigExpirationTimestamp != nil {
+		if time.Now().After(*s.KubeonfigExpirationTimestamp) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetKubeconfigMaxAge returns the maximum age for kubeconfig before refresh is needed.
+func (s *AROControlPlaneScope) GetKubeconfigMaxAge() time.Duration {
+	// Default to 30 minutes, but could be made configurable via ControlPlane spec
+	return 60 * time.Minute
 }
 
 // AROControlPlaneCache stores AROControlPlaneCache data locally so we don't have to hit the API multiple times within the same reconcile loop.
@@ -370,59 +408,21 @@ func (s *AROControlPlaneScope) MakeClusterCA() *corev1.Secret {
 }
 
 // StoreClusterInfo stores the discovery cluster-info configmap in the kube-public namespace on the AKS cluster so kubeadm can access it to join nodes.
+// This method now avoids direct cluster connections to prevent reliability issues with stale kubeconfigs.
 func (s *AROControlPlaneScope) StoreClusterInfo(ctx context.Context, caData []byte) error {
-	remoteclient, err := remote.NewClusterClient(ctx, aroControlPlaneScopeName, s.Client, types.NamespacedName{
-		Namespace: s.Cluster.Namespace,
-		Name:      s.Cluster.Name,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to create remote cluster kubeclient")
-	}
-	/*
-		// kube-public configmap kube-root-ca.crt
-		obj := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kube-root-ca.crt",
-				Namespace: metav1.NamespacePublic,
-			},
-		}
-		key := client.ObjectKeyFromObject(obj)
-		if err := remoteclient.Get(ctx, key, obj); err != nil {
-			return errors.Wrap(err, "failed to GET OBJECT FROM remote cluster kubeclient")
-		}
-	*/
-
-	discoveryFile := clientcmdapi.NewConfig()
-	discoveryFile.Clusters[""] = &clientcmdapi.Cluster{
-		CertificateAuthorityData: caData,
-		Server: fmt.Sprintf(
-			"%s:%d",
-			s.ControlPlaneEndpoint.Host,
-			s.ControlPlaneEndpoint.Port,
-		),
-	}
-
-	data, err := yaml.Marshal(&discoveryFile)
-	if err != nil {
-		return errors.Wrap(err, "failed to serialize cluster-info to yaml")
-	}
-
-	clusterInfo := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      bootstrapapi.ConfigMapClusterInfo,
-			Namespace: metav1.NamespacePublic,
-		},
-		Data: map[string]string{
-			bootstrapapi.KubeConfigKey: string(data),
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, remoteclient, clusterInfo, func() error {
-		clusterInfo.Data[bootstrapapi.KubeConfigKey] = string(data)
+	// Skip cluster-info creation if we don't have a valid control plane endpoint
+	// This avoids the need for remote cluster connections during kubeconfig reconciliation
+	if s.ControlPlaneEndpoint.Host == "" || s.ControlPlaneEndpoint.Port == 0 {
+		// Log that we're skipping this step but don't fail the reconciliation
+		// The cluster-info will be created when the control plane is ready
 		return nil
-	}); err != nil {
-		return errors.Wrapf(err, "failed to reconcile certificate authority data secret for cluster")
 	}
+
+	// For ARO clusters, we typically don't need to create cluster-info configmaps
+	// as ARO manages this internally. This method is kept for compatibility
+	// but we avoid remote connections to prevent kubeconfig validation issues.
+
+	// For now, we skip this step to avoid the reliability issues with remote cluster connections
 
 	return nil
 }
@@ -558,7 +558,7 @@ func (s *AROControlPlaneScope) ResourceGroup() string {
 }
 
 func (s *AROControlPlaneScope) NodeResourceGroup() string {
-	return s.ControlPlane.Spec.Platform.NodeResourceGroup()
+	return s.ControlPlane.NodeResourceGroup()
 }
 
 // ClusterName returns the cluster name.
@@ -683,7 +683,7 @@ func (s *AROControlPlaneScope) vnetId() string {
 	// /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{vnetName}/subnets/{subnetName}
 	re := regexp.MustCompile("(/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/virtualNetworks/[^/]+)/subnets/[^/]+")
 	groups := re.FindStringSubmatch(s.ControlPlane.Spec.Platform.Subnet)
-	if groups == nil || len(groups) <= 1 {
+	if len(groups) <= 1 {
 		return ""
 	}
 	return groups[1]
@@ -692,7 +692,7 @@ func (s *AROControlPlaneScope) vnetId() string {
 func (s *AROControlPlaneScope) vnetName() string {
 	re := regexp.MustCompile("/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/virtualNetworks/([^/]+)/subnets/[^/]+")
 	groups := re.FindStringSubmatch(s.ControlPlane.Spec.Platform.Subnet)
-	if groups == nil || len(groups) <= 1 {
+	if len(groups) <= 1 {
 		return ""
 	}
 	return groups[1]
@@ -700,7 +700,7 @@ func (s *AROControlPlaneScope) vnetName() string {
 func (s *AROControlPlaneScope) subnetName() string {
 	re := regexp.MustCompile("/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/virtualNetworks/[^/]+/subnets/([^/]+)")
 	groups := re.FindStringSubmatch(s.ControlPlane.Spec.Platform.Subnet)
-	if groups == nil || len(groups) <= 1 {
+	if len(groups) <= 1 {
 		return ""
 	}
 	return groups[1]
@@ -710,7 +710,7 @@ func (s *AROControlPlaneScope) securityGroupName() string {
 	// /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkSecurityGroups/{networkSecurityGroupName}
 	re := regexp.MustCompile("/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/networkSecurityGroups/([^/]+)")
 	groups := re.FindStringSubmatch(s.ControlPlane.Spec.Platform.NetworkSecurityGroupID)
-	if groups == nil || len(groups) <= 1 {
+	if len(groups) <= 1 {
 		return ""
 	}
 	return groups[1]

@@ -60,7 +60,7 @@ func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClien
 		now := time.Now()
 		extraPolicies = append(extraPolicies, azure.CustomPutPatchHeaderPolicy{
 			Headers: map[string]string{
-				"X-Ms-Arm-Resource-System-Data": fmt.Sprintf(`{"createdBy": "mveber", "createdByType": "User", "createdAt": "%s"}`,
+				"X-Ms-Arm-Resource-System-Data": fmt.Sprintf(`{"createdBy": "mveber", "createdByType": "User", "createdAt": %q}`,
 					now.Format(time.RFC3339),
 				),
 				"X-Ms-Identity-Url": "https://dummyhost.identity.azure.net",

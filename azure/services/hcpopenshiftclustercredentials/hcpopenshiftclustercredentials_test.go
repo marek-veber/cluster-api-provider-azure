@@ -40,10 +40,9 @@ var (
 	fakeGroupName = "my-rg"
 
 	fakeHcpOpenShiftClusterCredentialsSpec = &HcpOpenShiftClusterCredentialsSpec{
-		Name:               "test-cluster",
-		ResourceGroup:      fakeGroupName,
-		APIURI:             "https://api.test-cluster.example.com",
-		HasValidKubeconfig: false,
+		Name:          "test-cluster",
+		ResourceGroup: fakeGroupName,
+		APIURI:        "https://api.test-cluster.example.com",
 	}
 
 	internalError = &azcore.ResponseError{
@@ -52,8 +51,6 @@ var (
 			StatusCode: http.StatusInternalServerError,
 		},
 	}
-
-	notFoundError = &azcore.ResponseError{StatusCode: http.StatusNotFound}
 )
 
 func TestReconcileHcpOpenShiftClusterCredentials(t *testing.T) {

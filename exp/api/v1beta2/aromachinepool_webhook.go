@@ -38,7 +38,10 @@ import (
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
 
-var validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
+var (
+	ocpSemver               = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
+	validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
+)
 
 // SetupAROMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
 func SetupAROMachinePoolWebhookWithManager(mgr ctrl.Manager) error {
@@ -66,17 +69,10 @@ func (mw *aroMachinePoolWebhook) Default(_ context.Context, obj runtime.Object) 
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
-	// m.Labels[LabelAgentPoolMode] = m.Spec.Mode
 
 	if m.Spec.NodePoolName == "" {
 		m.Spec.NodePoolName = m.Name
 	}
-
-	/*
-		if m.Spec.OSType == nil {
-			m.Spec.OSType = ptr.To(DefaultOSType)
-		}
-	*/
 
 	return nil
 }
@@ -90,7 +86,16 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 		return nil, apierrors.NewBadRequest("expected an AROMachinePool")
 	}
 
+	return nil, m.Validate(mw.Client)
+}
+
+// Validate the Azure Machine Pool and return an aggregate error.
+func (m *AROMachinePool) Validate(cli client.Client) error {
 	var errs []error
+
+	errs = append(errs, validateOCPVersion(
+		m.Spec.Version,
+		field.NewPath("spec").Child("version")))
 
 	if m.Spec.Autoscaling != nil {
 		errs = append(errs, validateMinReplicas(
@@ -139,7 +144,7 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 			m.Spec.SubnetName,
 			field.NewPath("spec", "subnetName")))
 	*/
-	return nil, kerrors.NewAggregate(errs)
+	return kerrors.NewAggregate(errs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -191,19 +196,21 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 	}
 
 	if old.Spec.Autoscaling != nil && m.Spec.Autoscaling != nil {
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "autoscaling", "minReplicas"),
-			old.Spec.Autoscaling.MinReplicas,
-			m.Spec.Autoscaling.MinReplicas); err != nil {
-			allErrs = append(allErrs, err)
-		}
+		/*
+			if err := webhookutils.ValidateImmutable(
+				field.NewPath("spec", "autoscaling", "minReplicas"),
+				old.Spec.Autoscaling.MinReplicas,
+				m.Spec.Autoscaling.MinReplicas); err != nil {
+				allErrs = append(allErrs, err)
+			}
 
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "autoscaling", "maxReplicas"),
-			old.Spec.Autoscaling.MaxReplicas,
-			m.Spec.Autoscaling.MaxReplicas); err != nil {
-			allErrs = append(allErrs, err)
-		}
+			if err := webhookutils.ValidateImmutable(
+				field.NewPath("spec", "autoscaling", "maxReplicas"),
+				old.Spec.Autoscaling.MaxReplicas,
+				m.Spec.Autoscaling.MaxReplicas); err != nil {
+				allErrs = append(allErrs, err)
+			}
+		*/
 	} else {
 		if err := webhookutils.ValidateImmutable(
 			field.NewPath("spec", "autoscaling"),
@@ -293,6 +300,10 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 			allErrs = append(allErrs, err)
 		}
 	*/
+
+	if len(allErrs) == 0 {
+		return nil, m.Validate(mw.Client)
+	}
 
 	if len(allErrs) != 0 {
 		return nil, apierrors.NewInvalid(GroupVersion.WithKind(AROMachinePoolKind).GroupKind(), m.Name, allErrs)
@@ -399,19 +410,6 @@ func validateMinReplicas(minReplicas *int, fldPath *field.Path) error {
 	return nil
 }
 
-func validateMaxPods(maxPods *int, fldPath *field.Path) error {
-	if maxPods != nil {
-		if ptr.Deref(maxPods, 0) < 10 || ptr.Deref(maxPods, 0) > 250 {
-			return field.Invalid(
-				fldPath,
-				maxPods,
-				"MaxPods must be between 10 and 250")
-		}
-	}
-
-	return nil
-}
-
 func validateMPName(mpName string, specName *string, fldPath *field.Path) error {
 	var name *string
 	var fieldNameMessage string
@@ -505,6 +503,14 @@ func validateMPSubnetName(subnetName *string, fldPath *field.Path) error {
 			return field.Invalid(fldPath, subnetName,
 				fmt.Sprintf("name of subnet doesn't match regex %s", subnetRegex))
 		}
+	}
+	return nil
+}
+
+// validateOCPVersion validates the Kubernetes version.
+func validateOCPVersion(version string, fldPath *field.Path) error {
+	if !ocpSemver.MatchString(version) {
+		return field.Invalid(fldPath, version, "must be a openshift-<valid semantic version>")
 	}
 	return nil
 }

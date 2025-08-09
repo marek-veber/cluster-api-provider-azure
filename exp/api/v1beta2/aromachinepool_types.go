@@ -163,7 +163,7 @@ type AROMachinePoolStatus struct {
 	// Allowed values are; Succeeded, Failed, Canceled, Accepted, Deleting, Provisioning and Updating.
 	ProvisioningState string `json:"provisioningState,omitempty"`
 
-	// ARO-HCP OpenShift semantic version, for example "openshift-v4.20.0".
+	// ARO-HCP OpenShift version X.Y (without Z-stream), for example "4.20".
 	Version string `json:"version,omitempty"`
 
 	//TODO: mveber - required for features

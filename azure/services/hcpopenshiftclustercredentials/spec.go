@@ -24,10 +24,9 @@ import (
 
 // HcpOpenShiftClusterCredentialsSpec defines the specification for a HcpOpenShiftCluster.
 type HcpOpenShiftClusterCredentialsSpec struct {
-	Name               string
-	ResourceGroup      string
-	APIURI             string
-	HasValidKubeconfig bool
+	Name          string
+	ResourceGroup string
+	APIURI        string
 }
 
 var _ azure.ResourceSpecGetter = &HcpOpenShiftClusterCredentialsSpec{}
@@ -49,9 +48,8 @@ func (s *HcpOpenShiftClusterCredentialsSpec) OwnerResourceName() string {
 
 func (s *HcpOpenShiftClusterCredentialsSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
 	return &HcpOpenShiftClusterCredentialsSpec{
-		Name:               s.Name,
-		ResourceGroup:      s.ResourceGroup,
-		APIURI:             s.APIURI,
-		HasValidKubeconfig: s.HasValidKubeconfig,
+		Name:          s.Name,
+		ResourceGroup: s.ResourceGroup,
+		APIURI:        s.APIURI,
 	}, nil
 }

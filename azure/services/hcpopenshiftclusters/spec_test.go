@@ -76,13 +76,13 @@ func TestParameters(t *testing.T) {
 			name:     "immutable managedResourceGroup changed",
 			spec:     fakeHcpOpenShiftClustersSpecWithDifferentManagedRG(),
 			existing: fakeExistingHcpOpenShiftCluster(),
-			errorMsg: "The managedResourceGroup is immutable and cannot be changed",
+			errorMsg: "immutable fields cannot be changed",
 		},
 		{
 			name:     "immutable networkSecurityGroupId changed",
 			spec:     fakeHcpOpenShiftClustersSpecWithDifferentNSG(),
 			existing: fakeExistingHcpOpenShiftCluster(),
-			errorMsg: "The networkSecurityGroupId is immutable and cannot be changed",
+			errorMsg: "immutable fields cannot be changed",
 		},
 	}
 	for _, tc := range testcases {
