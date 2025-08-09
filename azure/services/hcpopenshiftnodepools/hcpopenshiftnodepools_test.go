@@ -43,13 +43,6 @@ var (
 	fakeClusterName  = "test-cluster"
 	fakeNodePoolName = "test-nodepool"
 
-	internalError = &azcore.ResponseError{
-		RawResponse: &http.Response{
-			Body:       io.NopCloser(strings.NewReader("#: Internal Server Error: StatusCode=500")),
-			StatusCode: http.StatusInternalServerError,
-		},
-	}
-
 	notFoundError = &azcore.ResponseError{StatusCode: http.StatusNotFound}
 )
 

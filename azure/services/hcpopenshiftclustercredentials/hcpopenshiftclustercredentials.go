@@ -117,7 +117,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 //
 // Code later in the reconciler uses scope's hcpOpenShiftCluster state for determining HcpOpenShiftCluster status and whether to create/delete
 // HcpOpenShiftClusterAdminCredential.
-func (s *Service) updateScopeState(ctx context.Context, result interface{}, hcpOpenShiftClusterCredentialsSpecs *HcpOpenShiftClusterCredentialsSpec) error {
+func (s *Service) updateScopeState(_ context.Context, result interface{}, _ *HcpOpenShiftClusterCredentialsSpec) error {
 	hcpOpenShiftClusterAdminCredential, ok := result.(arohcp.HcpOpenShiftClusterAdminCredential)
 	if !ok {
 		return errors.Errorf("%T is not an arohcp.HcpOpenShiftCluster", result)

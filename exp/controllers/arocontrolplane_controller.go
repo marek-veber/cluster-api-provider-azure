@@ -60,6 +60,8 @@ const (
 )
 
 var errInvalidClusterKind = errors.New("AROControlPlane cannot be used without AROCluster")
+
+// ErrNoAROClusterDefined is returned when no AROCluster is defined in the AROControlPlane spec.
 var ErrNoAROClusterDefined = fmt.Errorf("no %s AROCluster defined in AROControlPlane spec.resources", infrav2exp.GroupVersion.Group)
 
 // AROControlPlaneReconciler reconciles a AROControlPlane object.
@@ -180,10 +182,10 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if cluster != nil {
-		log = log.WithValues("cluster", cluster.Name)
+		_ = log.WithValues("cluster", cluster.Name)
 	}
 
-	/* TODO: mveber - machine pools
+	/*//nolint:gocritic // TODO: mveber - machine pools - commented code kept for future reference TODO: mveber - machine pools
 	// Fetch all the ManagedMachinePools owned by this Cluster.
 	opt1 := client.InNamespace(aroControlPlane.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
@@ -308,23 +310,6 @@ func (r *AROControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *
 	if scope.ControlPlane.Status.Initialization == nil || !scope.ControlPlane.Status.Initialization.ControlPlaneInitialized {
 		scope.ControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: scope.ControlPlane.Status.Ready}
 	}
-	/*
-		aroCluster := &infrav2exp.AROCluster{}
-		errGet := r.Get(ctx, client.ObjectKey{Namespace: aroControlPlane.Namespace, Name: aroControlPlane.Spec.AroClusterName}, aroCluster)
-		if errGet != nil {
-			return ctrl.Result{}, fmt.Errorf("error getting AroCluster: %w", errGet)
-		}
-
-			tokenExpiresIn, err := r.reconcileKubeconfig(ctx, aroControlPlane, cluster, aroCluster)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to reconcile kubeconfig: %w", err)
-			}
-			if tokenExpiresIn != nil && *tokenExpiresIn <= 0 { // the token has already expired
-				return ctrl.Result{Requeue: true}, nil
-			}
-			// ensure we refresh the token when it expires
-			result := ctrl.Result{RequeueAfter: ptr.Deref(tokenExpiresIn, 0)}
-	*/
 
 	return ctrl.Result{}, nil
 }

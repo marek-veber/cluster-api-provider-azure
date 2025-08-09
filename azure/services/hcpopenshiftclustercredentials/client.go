@@ -46,7 +46,7 @@ type azureClient struct {
 	apiCallTimeout      time.Duration
 }
 
-func (ac *azureClient) Get(ctx context.Context, spec azure.ResourceSpecGetter) (result interface{}, err error) {
+func (ac *azureClient) Get(_ context.Context, _ azure.ResourceSpecGetter) (result interface{}, err error) {
 	return nil, runtime.NewResponseErrorWithErrorCode(&http.Response{StatusCode: http.StatusNotFound}, cloudprovider.InstanceNotFound.Error())
 }
 
@@ -90,7 +90,7 @@ func newClient(auth azure.Authorizer, apiCallTimeout time.Duration) (*azureClien
 }
 
 // CreateOrUpdateAsync calls RequestAdminCredentialAsync request temporary credentials asynchronously.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, parameters interface{}) (result interface{}, poller *runtime.Poller[arohcp.HcpOpenShiftClustersClientRequestAdminCredentialResponse], err error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter, resumeToken string, _ interface{}) (result interface{}, poller *runtime.Poller[arohcp.HcpOpenShiftClustersClientRequestAdminCredentialResponse], err error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.azureClient.CreateOrUpdateAsync")
 	defer done()
 

@@ -18,6 +18,7 @@ package hcpopenshiftnodepools
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
@@ -260,13 +261,11 @@ func cmpPtr[V string | bool | int32 | arohcp.DiskStorageAccountType | arohcp.Tai
 	if (s1 != nil) && (s2 != nil) {
 		switch t1 := any(s1).(type) {
 		case *arohcp.Label:
-			switch t2 := any(s2).(type) {
-			case *arohcp.Label:
+			if t2, ok := any(s2).(*arohcp.Label); ok {
 				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value)
 			}
 		case *arohcp.Taint:
-			switch t2 := any(s2).(type) {
-			case *arohcp.Taint:
+			if t2, ok := any(s2).(*arohcp.Taint); ok {
 				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value) || cmpPtr(t1.Effect, t2.Effect)
 			}
 		}

@@ -115,7 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 //
 // Code later in the reconciler uses scope's HcpOpenShiftNodePoolScope state for determining NodePool status and whether to create/delete
 // NodePool.
-func (s *Service) updateScopeState(ctx context.Context, result interface{}, nodePoolSpec *HcpOpenShiftNodePoolSpec) error {
+func (s *Service) updateScopeState(_ context.Context, result interface{}, _ *HcpOpenShiftNodePoolSpec) error {
 	nodePool, ok := result.(arohcp.NodePool)
 	if !ok {
 		return errors.Errorf("%T is not an arohcp.NodePool", result)

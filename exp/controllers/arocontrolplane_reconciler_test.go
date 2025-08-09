@@ -65,6 +65,7 @@ users:
 )
 
 func createTestScope(t *testing.T, kubeconfigData *string) (*scope.AROControlPlaneScope, client.Client) {
+	t.Helper()
 	return createTestScopeWithOptions(t, kubeconfigData, true)
 }
 

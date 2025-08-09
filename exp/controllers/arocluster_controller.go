@@ -177,7 +177,7 @@ func (r *AROClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	)
 	defer done()
 
-	log = log.WithValues("namespace", req.Namespace, "AROCluster", req.Name)
+	_ = log.WithValues("namespace", req.Namespace, "AROCluster", req.Name)
 
 	// Fetch the AROCluster instance
 	aroCluster := &infra.AROCluster{}
@@ -286,7 +286,7 @@ func (r *AROClusterReconciler) reconcileNormal(ctx context.Context, aroCluster *
 }
 
 func (r *AROClusterReconciler) reconcilePaused(ctx context.Context, aroCluster *infra.AROCluster) (ctrl.Result, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AROClusterReconciler.reconcilePaused")
+	_, log, done := tele.StartSpanWithLogger(ctx, "controllers.AROClusterReconciler.reconcilePaused")
 	defer done()
 	log.V(4).Info("reconciling pause")
 
@@ -296,7 +296,7 @@ func (r *AROClusterReconciler) reconcilePaused(ctx context.Context, aroCluster *
 }
 
 func (r *AROClusterReconciler) reconcileDelete(ctx context.Context, aroCluster *infra.AROCluster) (ctrl.Result, error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx,
+	_, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AROClusterReconciler.reconcileDelete",
 	)
 	defer done()
@@ -306,11 +306,11 @@ func (r *AROClusterReconciler) reconcileDelete(ctx context.Context, aroCluster *
 	return ctrl.Result{}, nil
 }
 
-func (r *AROClusterReconciler) getControlPlaneEndpoint(apiUrl string) (clusterv1.APIEndpoint, error) {
-	if apiUrl == "" {
+func (r *AROClusterReconciler) getControlPlaneEndpoint(apiURL string) (clusterv1.APIEndpoint, error) {
+	if apiURL == "" {
 		return clusterv1.APIEndpoint{}, nil
 	}
-	u, err := url.ParseRequestURI(apiUrl)
+	u, err := url.ParseRequestURI(apiURL)
 	if err != nil {
 		return clusterv1.APIEndpoint{}, err
 	}
@@ -318,9 +318,12 @@ func (r *AROClusterReconciler) getControlPlaneEndpoint(apiUrl string) (clusterv1
 	if err != nil {
 		return clusterv1.APIEndpoint{}, err
 	}
+	if port < 0 || port > 65535 {
+		return clusterv1.APIEndpoint{}, fmt.Errorf("invalid port number: %d", port)
+	}
 	host := strings.Split(u.Host, ":")[0]
 	return clusterv1.APIEndpoint{
 		Host: host,
-		Port: int32(port),
+		Port: int32(port), //nolint:gosec // port range validated above
 	}, nil
 }

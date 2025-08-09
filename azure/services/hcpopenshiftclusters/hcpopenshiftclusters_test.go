@@ -122,7 +122,7 @@ func TestReconcileHcpOpenShiftCluster(t *testing.T) {
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 				s.SetProvisioningState(gomock.Any()).AnyTimes()
 				s.SetStatusVersion(gomock.Any()).AnyTimes()
-				s.SetApiUrl(gomock.Any(), gomock.Any()).AnyTimes()
+				s.SetAPIURL(gomock.Any(), gomock.Any()).AnyTimes()
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestReconcileHcpOpenShiftCluster(t *testing.T) {
 				m.Get(gomockinternal.AContext(), fakeHcpOpenShiftClusterSpec).Return(existingCluster, nil)
 				s.SetProvisioningState(existingCluster.Properties.ProvisioningState).AnyTimes()
 				s.SetStatusVersion(existingCluster.Properties.Version).AnyTimes()
-				s.SetApiUrl(existingCluster.Properties.API.URL, existingCluster.Properties.API.Visibility).AnyTimes()
+				s.SetAPIURL(existingCluster.Properties.API.URL, existingCluster.Properties.API.Visibility).AnyTimes()
 				r.CreateOrUpdateResource(gomockinternal.AContext(), fakeHcpOpenShiftClusterSpec, serviceName).Return(existingCluster, nil)
 				s.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 			},

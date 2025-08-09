@@ -238,13 +238,13 @@ type AROMachinePoolList struct {
 }
 
 // GetConditions returns the observations of the operational state of the AROMachinePool resource.
-func (r *AROMachinePool) GetConditions() clusterv1.Conditions {
-	return r.Status.Conditions
+func (c *AROMachinePool) GetConditions() clusterv1.Conditions {
+	return c.Status.Conditions
 }
 
 // SetConditions sets the underlying service state of the AROMachinePool to the predescribed clusterv1.Conditions.
-func (r *AROMachinePool) SetConditions(conditions clusterv1.Conditions) {
-	r.Status.Conditions = conditions
+func (c *AROMachinePool) SetConditions(conditions clusterv1.Conditions) {
+	c.Status.Conditions = conditions
 }
 
 func init() {

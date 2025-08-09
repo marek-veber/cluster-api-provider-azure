@@ -334,17 +334,18 @@ type AROControlPlaneList struct {
 }
 
 // GetConditions returns the control planes conditions.
-func (r *AROControlPlane) GetConditions() clusterv1.Conditions {
-	return r.Status.Conditions
+func (c *AROControlPlane) GetConditions() clusterv1.Conditions {
+	return c.Status.Conditions
 }
 
 // SetConditions sets the status conditions for the AROControlPlane.
-func (r *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
-	r.Status.Conditions = conditions
+func (c *AROControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	c.Status.Conditions = conditions
 }
 
-func (r *AROControlPlane) NodeResourceGroup() string {
-	nodeResourceGroup := fmt.Sprintf("capz_node_%s_%s_rg", r.Spec.AroClusterName, r.Spec.Platform.ResourceGroup)
+// NodeResourceGroup returns the node resource group name for the ARO control plane.
+func (c *AROControlPlane) NodeResourceGroup() string {
+	nodeResourceGroup := fmt.Sprintf("capz_node_%s_%s_rg", c.Spec.AroClusterName, c.Spec.Platform.ResourceGroup)
 	return nodeResourceGroup
 }
 

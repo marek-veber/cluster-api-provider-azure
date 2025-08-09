@@ -61,7 +61,7 @@ type AROMachinePoolReconciler struct {
 type aroMachinePoolServiceCreator func(aroMachinePoolScope *scope.AROMachinePoolScope, apiCallTimeout time.Duration) (*aroMachinePoolService, error)
 
 // NewAROMachinePoolReconciler returns a new AROMachinePoolReconciler instance.
-func NewAROMachinePoolReconciler(client client.Client, recorder record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AROMachinePoolReconciler {
+func NewAROMachinePoolReconciler(client client.Client, _ record.EventRecorder, timeouts reconciler.Timeouts, watchFilterValue string, credCache azure.CredentialCache) *AROMachinePoolReconciler {
 	ampr := &AROMachinePoolReconciler{
 		Client: client,
 		//Recorder:         recorder,

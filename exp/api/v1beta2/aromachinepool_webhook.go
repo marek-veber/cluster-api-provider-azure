@@ -40,7 +40,7 @@ import (
 
 var (
 	ocpSemver               = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
-	validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`)
+	validNodePublicPrefixID = regexp.MustCompile(`(?i)^/?subscriptions/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/resourcegroups/[^/]+/providers/microsoft\.network/publicipprefixes/[^/]+$`) //nolint:unused // used by unused functions kept for future reference
 )
 
 // SetupAROMachinePoolWebhookWithManager sets up and registers the webhook with the manager.
@@ -90,7 +90,7 @@ func (mw *aroMachinePoolWebhook) ValidateCreate(_ context.Context, obj runtime.O
 }
 
 // Validate the Azure Machine Pool and return an aggregate error.
-func (m *AROMachinePool) Validate(cli client.Client) error {
+func (m *AROMachinePool) Validate(_ client.Client) error {
 	var errs []error
 
 	errs = append(errs, validateOCPVersion(
@@ -106,44 +106,6 @@ func (m *AROMachinePool) Validate(cli client.Client) error {
 			&m.Spec.Autoscaling.MaxReplicas, &m.Spec.Autoscaling.MinReplicas,
 			field.NewPath("spec", "autoscaling", "maxReplicas")))
 	}
-	/*
-		errs = append(errs, validateOSType(
-			m.Spec.Mode,
-			m.Spec.OSType,
-			field.NewPath("spec", "osType")))
-
-		errs = append(errs, validateMPName(
-			m.Name,
-			m.Spec.Name,
-			m.Spec.OSType,
-			field.NewPath("spec", "name")))
-
-		errs = append(errs, validateLabels(
-			m.Spec.NodeLabels,
-			field.NewPath("spec", "nodeLabels")))
-
-		errs = append(errs, validateNodePublicIPPrefixID(
-			m.Spec.NodePublicIPPrefixID,
-			field.NewPath("spec", "nodePublicIPPrefixID")))
-
-		errs = append(errs, validateEnableNodePublicIP(
-			m.Spec.EnableNodePublicIP,
-			m.Spec.NodePublicIPPrefixID,
-			field.NewPath("spec", "enableNodePublicIP")))
-
-		errs = append(errs, validateKubeletConfig(
-			m.Spec.KubeletConfig,
-			field.NewPath("spec", "kubeletConfig")))
-
-		errs = append(errs, validateLinuxOSConfig(
-			m.Spec.LinuxOSConfig,
-			m.Spec.KubeletConfig,
-			field.NewPath("spec", "linuxOSConfig")))
-
-		errs = append(errs, validateMPSubnetName(
-			m.Spec.SubnetName,
-			field.NewPath("spec", "subnetName")))
-	*/
 	return kerrors.NewAggregate(errs)
 }
 
@@ -196,22 +158,6 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 	}
 
 	if old.Spec.Autoscaling != nil && m.Spec.Autoscaling != nil {
-		/*
-			if err := webhookutils.ValidateImmutable(
-				field.NewPath("spec", "autoscaling", "minReplicas"),
-				old.Spec.Autoscaling.MinReplicas,
-				m.Spec.Autoscaling.MinReplicas); err != nil {
-				allErrs = append(allErrs, err)
-			}
-
-			if err := webhookutils.ValidateImmutable(
-				field.NewPath("spec", "autoscaling", "maxReplicas"),
-				old.Spec.Autoscaling.MaxReplicas,
-				m.Spec.Autoscaling.MaxReplicas); err != nil {
-				allErrs = append(allErrs, err)
-			}
-		*/
-	} else {
 		if err := webhookutils.ValidateImmutable(
 			field.NewPath("spec", "autoscaling"),
 			old.Spec.Autoscaling,
@@ -219,87 +165,6 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 			allErrs = append(allErrs, err)
 		}
 	}
-
-	/*
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "enableEncryptionAtHost"),
-			old.Spec.EnableEncryptionAtHost,
-			m.Spec.EnableEncryptionAtHost); err != nil && old.Spec.EnableEncryptionAtHost != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if !webhookutils.EnsureStringSlicesAreEquivalent(m.Spec.AvailabilityZones, old.Spec.AvailabilityZones) {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("spec", "availabilityZones"),
-					m.Spec.AvailabilityZones,
-					"field is immutable"))
-		}
-
-		if m.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
-			// validate for last system node pool
-			if err := validateLastSystemNodePool(mw.Client, m.Labels, m.Namespace, m.Annotations); err != nil {
-				allErrs = append(allErrs, field.Forbidden(
-					field.NewPath("spec", "mode"),
-					"Cannot change node pool mode to User, you must have at least one System node pool in your cluster"))
-			}
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "maxPods"),
-			old.Spec.MaxPods,
-			m.Spec.MaxPods); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "osDiskType"),
-			old.Spec.OsDiskType,
-			m.Spec.OsDiskType); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "scaleSetPriority"),
-			old.Spec.ScaleSetPriority,
-			m.Spec.ScaleSetPriority); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "enableUltraSSD"),
-			old.Spec.EnableUltraSSD,
-			m.Spec.EnableUltraSSD); err != nil {
-			allErrs = append(allErrs, err)
-		}
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "enableNodePublicIP"),
-			old.Spec.EnableNodePublicIP,
-			m.Spec.EnableNodePublicIP); err != nil {
-			allErrs = append(allErrs, err)
-		}
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "nodePublicIPPrefixID"),
-			old.Spec.NodePublicIPPrefixID,
-			m.Spec.NodePublicIPPrefixID); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "kubeletConfig"),
-			old.Spec.KubeletConfig,
-			m.Spec.KubeletConfig); err != nil {
-			allErrs = append(allErrs, err)
-		}
-
-
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "linuxOSConfig"),
-			old.Spec.LinuxOSConfig,
-			m.Spec.LinuxOSConfig); err != nil {
-			allErrs = append(allErrs, err)
-		}
-	*/
 
 	if len(allErrs) == 0 {
 		return nil, m.Validate(mw.Client)
@@ -318,11 +183,6 @@ func (mw *aroMachinePoolWebhook) ValidateDelete(_ context.Context, obj runtime.O
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AROMachinePool")
 	}
-	/*
-		if m.Spec.Mode != string(NodePoolModeSystem) {
-			return nil, nil
-		}
-	*/
 
 	return nil, errors.Wrapf(validateLastSystemNodePool(mw.Client, m.Labels, m.Namespace, m.Annotations), "if the delete is triggered via owner MachinePool please refer to trouble shooting section in https://capz.sigs.k8s.io/topics/managedcluster.html")
 }
@@ -410,6 +270,7 @@ func validateMinReplicas(minReplicas *int, fldPath *field.Path) error {
 	return nil
 }
 
+//nolint:unused // kept for future use
 func validateMPName(mpName string, specName *string, fldPath *field.Path) error {
 	var name *string
 	var fieldNameMessage string
@@ -427,6 +288,7 @@ func validateMPName(mpName string, specName *string, fldPath *field.Path) error 
 	return validateNamePattern(name, fieldNameMessage, fldPath)
 }
 
+//nolint:unused // kept for future use
 func validateNameLength(name *string, fieldNameMessage string, fldPath *field.Path) error {
 	maxNameLen := 12
 	if name != nil && len(*name) > maxNameLen {
@@ -438,6 +300,7 @@ func validateNameLength(name *string, fieldNameMessage string, fldPath *field.Pa
 	return nil
 }
 
+//nolint:unused // kept for future use
 func validateNamePattern(name *string, fieldNameMessage string, fldPath *field.Path) error {
 	if name == nil || *name == "" {
 		return nil
@@ -474,6 +337,7 @@ func validateLabels(nodeLabels map[string]string, fldPath *field.Path) error {
 	return nil
 }
 
+//nolint:unused // kept for future use
 func validateNodePublicIPPrefixID(nodePublicIPPrefixID *string, fldPath *field.Path) error {
 	if nodePublicIPPrefixID != nil && !validNodePublicPrefixID.MatchString(*nodePublicIPPrefixID) {
 		return field.Invalid(
@@ -484,6 +348,7 @@ func validateNodePublicIPPrefixID(nodePublicIPPrefixID *string, fldPath *field.P
 	return nil
 }
 
+//nolint:unused // kept for future use
 func validateEnableNodePublicIP(enableNodePublicIP *bool, nodePublicIPPrefixID *string, fldPath *field.Path) error {
 	if (enableNodePublicIP == nil || !*enableNodePublicIP) &&
 		nodePublicIPPrefixID != nil {
@@ -495,6 +360,7 @@ func validateEnableNodePublicIP(enableNodePublicIP *bool, nodePublicIPPrefixID *
 	return nil
 }
 
+//nolint:unused // kept for future use
 func validateMPSubnetName(subnetName *string, fldPath *field.Path) error {
 	if subnetName != nil {
 		subnetRegex := "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9]$"

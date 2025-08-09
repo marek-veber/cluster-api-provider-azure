@@ -163,24 +163,6 @@ func (m *AROControlPlane) Validate(cli client.Client) error {
 
 	allErrs = append(allErrs, validateName(m.Name, field.NewPath("name"))...)
 
-	/*
-		allErrs = append(allErrs, validateAutoScalerProfile(m.Spec.AutoScalerProfile, field.NewPath("spec").Child("autoScalerProfile"))...)
-
-		allErrs = append(allErrs, validateAKSExtensions(m.Spec.Extensions, field.NewPath("spec").Child("aksExtensions"))...)
-
-		allErrs = append(allErrs, m.Spec.AROControlPlaneClassSpec.validateSecurityProfile()...)
-
-		allErrs = append(allErrs, validateNetworkPolicy(m.Spec.NetworkPolicy, m.Spec.NetworkDataplane, field.NewPath("spec").Child("networkPolicy"))...)
-
-		allErrs = append(allErrs, validateNetworkDataplane(m.Spec.NetworkDataplane, m.Spec.NetworkPolicy, m.Spec.NetworkPluginMode, field.NewPath("spec").Child("networkDataplane"))...)
-
-		allErrs = append(allErrs, validateAPIServerAccessProfile(m.Spec.APIServerAccessProfile, field.NewPath("spec").Child("apiServerAccessProfile"))...)
-
-		allErrs = append(allErrs, validateAMCPVirtualNetwork(m.Spec.VirtualNetwork, field.NewPath("spec").Child("virtualNetwork"))...)
-
-		allErrs = append(allErrs, validateFleetsMember(m.Spec.FleetsMember, field.NewPath("spec").Child("fleetsMember"))...)
-	*/
-
 	return allErrs.ToAggregate()
 }
 
@@ -230,11 +212,6 @@ func validateNetwork(virtualNetwork *NetworkSpec, fldPath *field.Path) field.Err
 		if vnetErr != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("PodCIDR"), virtualNetwork.PodCIDR, "CIDR block is invalid"))
 		}
-		/*
-			if vnetErr == nil && subnetErr == nil && !parentNet.Contains(subnetIP) {
-				allErrs = append(allErrs, field.Invalid(fldPath.Child("CIDRBlock"), virtualNetwork.CIDRBlock, "pre-existing virtual networks CIDR block should contain the subnet CIDR block"))
-			}
-		*/
 	}
 	return allErrs
 }

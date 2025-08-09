@@ -20,14 +20,13 @@ import (
 	"context"
 	"fmt"
 
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // HcpOpenShiftClustersSpec defines the specification for a HcpOpenShiftCluster.
@@ -158,7 +157,7 @@ func (s *HcpOpenShiftClustersSpec) getVisibility() (*arohcp.Visibility, error) {
 
 // Parameters returns the parameters for the HcpOpenShiftCluster.
 func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Parameters")
+	_, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Parameters")
 	defer done()
 
 	var existingHcpOpenShiftCluster *arohcp.HcpOpenShiftCluster
@@ -303,16 +302,16 @@ func ptrToS(a any) string {
 		return fmt.Sprintf("%T:???", msg)
 	}
 }
-func checkChange[V comparable](path string, old, new *V, changes *[]string) bool {
-	if ptr.Equal(old, new) {
+func checkChange[V comparable](path string, old, updated *V, changes *[]string) bool {
+	if ptr.Equal(old, updated) {
 		return false
 	}
-	*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(old), ptrToS(new)))
+	*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(old), ptrToS(updated)))
 	return true
 }
-func checkImmutable[V comparable](path string, old, new **V, changes *[]string) bool {
-	if checkChange(path, *old, *new, changes) {
-		*new = *old
+func checkImmutable[V comparable](path string, old, updated **V, changes *[]string) bool {
+	if checkChange(path, *old, *updated, changes) {
+		*updated = *old
 		return true
 	}
 	return false
@@ -338,5 +337,9 @@ func checkChangeIdentities(path string, a1 *arohcp.OperatorsAuthenticationProfil
 	j2, _ := a2.MarshalJSON()
 	s1 := string(j1)
 	s2 := string(j2)
-	return s1 != s2
+	if s1 != s2 {
+	    *changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, s1, s2)))
+            return true
+        }
+        return false
 }

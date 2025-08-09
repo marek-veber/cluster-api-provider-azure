@@ -77,10 +77,12 @@ type AROCluster struct {
 	Status AROClusterStatus `json:"status,omitempty"`
 }
 
+// GetConditions returns the conditions for the AROCluster.
 func (ac *AROCluster) GetConditions() clusterv1.Conditions {
 	return ac.Status.Conditions
 }
 
+// SetConditions sets the conditions for the AROCluster.
 func (ac *AROCluster) SetConditions(conditions clusterv1.Conditions) {
 	ac.Status.Conditions = conditions
 }

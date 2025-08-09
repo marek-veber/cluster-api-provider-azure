@@ -122,7 +122,8 @@ type AROMachinePoolScope struct {
 	azure.AsyncReconciler
 }
 
-func (s *AROMachinePoolScope) NodePoolSpecs(ctx context.Context) azure.ResourceSpecGetter {
+// NodePoolSpecs returns the resource spec getter for node pools.
+func (s *AROMachinePoolScope) NodePoolSpecs(_ context.Context) azure.ResourceSpecGetter {
 	ret := &hcpopenshiftnodepools.HcpOpenShiftNodePoolSpec{
 		ClusterName:        s.ClusterName(),
 		Location:           s.Location(),
@@ -133,6 +134,7 @@ func (s *AROMachinePoolScope) NodePoolSpecs(ctx context.Context) azure.ResourceS
 	return ret
 }
 
+// SetStatusVersion sets the version profile in the machine pool status.
 func (s *AROMachinePoolScope) SetStatusVersion(versionProfile *arohcp.NodePoolVersionProfile) {
 	if versionProfile == nil {
 		return
@@ -140,6 +142,7 @@ func (s *AROMachinePoolScope) SetStatusVersion(versionProfile *arohcp.NodePoolVe
 	s.InfraMachinePool.Status.Version = *versionProfile.ID
 }
 
+// SetProvisioningState sets the provisioning state in the machine pool status.
 func (s *AROMachinePoolScope) SetProvisioningState(state *arohcp.ProvisioningState) {
 	if state == nil {
 		conditions.MarkUnknown(s.InfraMachinePool, v1beta2.AROMachinePoolReadyCondition, infrav1.CreatingReason, "nil ProvisioningState was returned")
@@ -303,6 +306,7 @@ func (s *AROMachinePoolScope) ResourceGroup() string {
 	return s.ControlPlane.Spec.Platform.ResourceGroup
 }
 
+// NodeResourceGroup returns the node resource group name.
 func (s *AROMachinePoolScope) NodeResourceGroup() string {
 	return s.ControlPlane.NodeResourceGroup()
 }

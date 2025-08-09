@@ -46,7 +46,8 @@ func (s *HcpOpenShiftClusterCredentialsSpec) OwnerResourceName() string {
 	return s.Name
 }
 
-func (s *HcpOpenShiftClusterCredentialsSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+// Parameters returns the parameters for the HCP OpenShift cluster credentials.
+func (s *HcpOpenShiftClusterCredentialsSpec) Parameters(_ context.Context, _ interface{}) (params interface{}, err error) {
 	return &HcpOpenShiftClusterCredentialsSpec{
 		Name:          s.Name,
 		ResourceGroup: s.ResourceGroup,

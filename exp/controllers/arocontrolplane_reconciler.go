@@ -101,17 +101,6 @@ func (s *aroControlPlaneService) reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.aroControlPlaneService.Reconcile")
 	defer done()
 
-	/*
-		if err := s.setFailureDomainsForLocation(ctx); err != nil {
-			return errors.Wrap(err, "failed to get availability zones")
-		}
-		if s.scope.ControlPlaneEnabled() {
-			s.scope.AROControlPlane.SetBackendPoolNameDefault()
-			s.scope.SetDNSName()
-			s.scope.SetControlPlaneSecurityRules()
-		}
-	*/
-
 	for _, service := range s.services {
 		if err := service.Reconcile(ctx); err != nil {
 			return errors.Wrapf(err, "failed to reconcile AROControlPlane service %s", service.Name())

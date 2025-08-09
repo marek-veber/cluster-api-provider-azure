@@ -38,7 +38,7 @@ var (
 )
 
 // SetAROClusterDefaults propagates values defined by Cluster API to an ARO AROCluster.
-func SetAROClusterDefaults(ctrlClient client.Client, aroControlPlane *controlv1.AROControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
+func SetAROClusterDefaults(_ client.Client, aroControlPlane *controlv1.AROControlPlane, cluster *clusterv1.Cluster) ResourcesMutator {
 	return func(ctx context.Context, us []*unstructured.Unstructured) error {
 		ctx, _, done := tele.StartSpanWithLogger(ctx, "mutators.SetAROClusterDefaults")
 		defer done()

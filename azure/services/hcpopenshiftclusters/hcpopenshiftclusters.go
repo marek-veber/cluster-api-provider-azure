@@ -19,6 +19,7 @@ package hcpopenshiftclusters
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
@@ -42,7 +43,7 @@ type (
 		HcpOpenShiftClusterSpecs(context.Context) azure.ResourceSpecGetter
 		SetProvisioningState(state *arohcp.ProvisioningState)
 		SetStatusVersion(version *arohcp.VersionProfile)
-		SetApiUrl(url *string, visibility *arohcp.Visibility)
+		SetAPIURL(url *string, visibility *arohcp.Visibility)
 	}
 
 	// Service provides operations on Azure resources.
@@ -128,14 +129,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 //
 // Code later in the reconciler uses scope's hcpOpenShiftCluster state for determining HcpOpenShiftCluster status and whether to create/delete
 // HcpOpenShiftCluster.
-func (s *Service) updateScopeState(ctx context.Context, result interface{}, hcpOpenShiftClusterSpecs *HcpOpenShiftClustersSpec) error {
+func (s *Service) updateScopeState(_ context.Context, result interface{}, _ *HcpOpenShiftClustersSpec) error {
 	hcpOpenShiftCluster, ok := result.(arohcp.HcpOpenShiftCluster)
 	if !ok {
 		return errors.Errorf("%T is not an arohcp.HcpOpenShiftCluster", result)
 	}
 	s.Scope.SetProvisioningState(hcpOpenShiftCluster.Properties.ProvisioningState)
 	s.Scope.SetStatusVersion(hcpOpenShiftCluster.Properties.Version)
-	s.Scope.SetApiUrl(hcpOpenShiftCluster.Properties.API.URL, hcpOpenShiftCluster.Properties.API.Visibility)
+	s.Scope.SetAPIURL(hcpOpenShiftCluster.Properties.API.URL, hcpOpenShiftCluster.Properties.API.Visibility)
 
 	return nil
 }
