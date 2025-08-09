@@ -277,7 +277,6 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 			for _, msg := range immutable {
 				log.Info(fmt.Sprintf("cannot update immutable field %s", msg))
 			}
-			return nil, errors.Errorf("immutable fields cannot be changed: %v", immutable)
 		}
 		if len(changes) == 0 {
 			return nil, nil
@@ -338,8 +337,8 @@ func checkChangeIdentities(path string, a1 *arohcp.OperatorsAuthenticationProfil
 	s1 := string(j1)
 	s2 := string(j2)
 	if s1 != s2 {
-	    *changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, s1, s2)))
-            return true
-        }
-        return false
+		*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, s1, s2))
+		return true
+	}
+	return false
 }

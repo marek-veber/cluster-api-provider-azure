@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	ocpSemver = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
+	ocpSemver = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
 )
 
 // SetupAROControlPlaneWebhookWithManager sets up and registers the webhook with the manager.
@@ -190,7 +190,7 @@ func (m *AROControlPlane) validateDNSPrefix(_ client.Client) field.ErrorList {
 func validateOCPVersion(version string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if !ocpSemver.MatchString(version) {
-		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a <valid semantic version>"))
+		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a in format <X.Y>"))
 	}
 
 	return allErrs

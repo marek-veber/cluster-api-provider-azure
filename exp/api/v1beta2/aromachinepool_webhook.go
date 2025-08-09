@@ -376,7 +376,7 @@ func validateMPSubnetName(subnetName *string, fldPath *field.Path) error {
 // validateOCPVersion validates the Kubernetes version.
 func validateOCPVersion(version string, fldPath *field.Path) error {
 	if !ocpSemver.MatchString(version) {
-		return field.Invalid(fldPath, version, "must be a openshift-<valid semantic version>")
+		return field.Invalid(fldPath, version, "must be a <valid semantic version>")
 	}
 	return nil
 }

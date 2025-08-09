@@ -73,16 +73,16 @@ func TestParameters(t *testing.T) {
 			errorMsg: "unsupported visibilit type InvalidType",
 		},
 		{
-			name:     "immutable managedResourceGroup changed",
+			name:     "immutable managedResourceGroup changed - should not error",
 			spec:     fakeHcpOpenShiftClustersSpecWithDifferentManagedRG(),
 			existing: fakeExistingHcpOpenShiftCluster(),
-			errorMsg: "immutable fields cannot be changed",
+			expected: fakeHcpOpenShiftClusterWithDifferentManagedRG(),
 		},
 		{
-			name:     "immutable networkSecurityGroupId changed",
+			name:     "immutable networkSecurityGroupId changed - should not error",
 			spec:     fakeHcpOpenShiftClustersSpecWithDifferentNSG(),
 			existing: fakeExistingHcpOpenShiftCluster(),
-			errorMsg: "immutable fields cannot be changed",
+			expected: fakeHcpOpenShiftClusterWithDifferentNSG(),
 		},
 	}
 	for _, tc := range testcases {
@@ -175,4 +175,14 @@ func fakeHcpOpenShiftClustersSpecWithDifferentNSG() HcpOpenShiftClustersSpec {
 	spec := fakeHcpOpenShiftClustersSpec()
 	spec.NetworkSecurityGroupID = "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/different-nsg"
 	return spec
+}
+
+func fakeHcpOpenShiftClusterWithDifferentManagedRG() interface{} {
+	// This should return nil since immutable fields are reverted, no changes should be made
+	return nil
+}
+
+func fakeHcpOpenShiftClusterWithDifferentNSG() interface{} {
+	// This should return nil since immutable fields are reverted, no changes should be made
+	return nil
 }
