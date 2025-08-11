@@ -60,9 +60,9 @@ spec:
                 type: object
               aroClusterName:
                 description: |-
-                  Cluster name must be valid DNS-1035 label, so it must consist of lower case alphanumeric
-                  characters or '-', start with an alphabetic character, end with an alphanumeric character
-                  and have a max length of 54 characters.
+                  Cluster name must be a valid DNS-1035 label, so it must consist of lower case alphanumeric
+                  characters or '-', start with an alphabetic character, end with an alphanumeric character,
+                  and have a maximum length of 54 characters.
                 maxLength: 54
                 pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
                 type: string
@@ -71,7 +71,7 @@ spec:
                   rule: self == oldSelf
               channelGroup:
                 default: stable
-                description: OpenShift version channel group, default is stable.
+                description: OpenShift version channel group; default is stable.
                 enum:
                 - stable
                 - candidate
@@ -80,9 +80,9 @@ spec:
               domainPrefix:
                 description: |-
                   DomainPrefix is an optional prefix added to the cluster's domain name. It will be used
-                  when generating a sub-domain for the cluster on openshiftapps domain. It must be valid DNS-1035 label
-                  consisting of lower case alphanumeric characters or '-', start with an alphabetic character
-                  end with an alphanumeric character and have a max length of 15 characters.
+                  when generating a sub-domain for the cluster on the openshiftapps domain. It must be a valid DNS-1035 label
+                  consisting of lower case alphanumeric characters or '-', start with an alphabetic character,
+                  end with an alphanumeric character, and have a maximum length of 15 characters.
                 maxLength: 15
                 pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
                 type: string
@@ -149,7 +149,7 @@ spec:
                     type: string
                   networkType:
                     default: OVNKubernetes
-                    description: The CNI network type default is OVNKubernetes.
+                    description: The CNI network type; default is OVNKubernetes.
                     enum:
                     - OVNKubernetes
                     - Other
@@ -251,17 +251,17 @@ spec:
                       to it.
                     type: string
                   resourceGroupRef:
-                    description: ResourceGroup Ref name that is used to create the
-                      ResourceGroup CR. The ResourceGroupRef must be in the same namespace
-                      as the AROControlPlane and cannot be set with ResourceGroup.
+                    description: ResourceGroupRef is the name that is used to create
+                      the ResourceGroup CR. The ResourceGroupRef must be in the same
+                      namespace as the AROControlPlane and cannot be set with ResourceGroup.
                     type: string
                   subnet:
                     description: Azure subnet id
                     type: string
                   subnetRef:
-                    description: Subnet Ref name that is used to create the VirtualNetworksSubnet
-                      CR. The SubnetRef must be in the same namespace as the AROControlPlane
-                      and cannot be set with Subnet.
+                    description: SubnetRef is the name that is used to create the
+                      VirtualNetworksSubnet CR. The SubnetRef must be in the same
+                      namespace as the AROControlPlane and cannot be set with Subnet.
                     type: string
                 type: object
               version:
@@ -282,7 +282,7 @@ spec:
                 type: string
               visibility:
                 description: Visibility represents the visibility of an API endpoint.
-                  Allowed values are public and private default is public.
+                  Allowed values are public and private; default is public.
                 type: string
             required:
             - aroClusterName
