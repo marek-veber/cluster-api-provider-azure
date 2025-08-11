@@ -21,11 +21,11 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -348,15 +348,15 @@ func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
 
 			// Create a copy of the base control plane
 			old := baseControlPlane.DeepCopy()
-			new := baseControlPlane.DeepCopy()
+			upd := baseControlPlane.DeepCopy()
 
 			// Apply the modification
-			tc.modify(new)
+			tc.modify(upd)
 
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 			webhook := &aroControlPlaneWebhook{Client: fakeClient}
 
-			_, err := webhook.ValidateUpdate(context.TODO(), old, new)
+			_, err := webhook.ValidateUpdate(context.TODO(), old, upd)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())

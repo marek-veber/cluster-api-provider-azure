@@ -111,7 +111,7 @@ func (mw *aroControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newO
 		{field.NewPath("spec", "visibility"), old.Spec.Visibility, m.Spec.Visibility},
 		// version.id: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable per TypeSpec
 		{field.NewPath("spec", "version"), old.Spec.Version, m.Spec.Version},
-                // TODO: location seems to be immutable too
+		// TODO: location seems to be immutable too
 		{field.NewPath("spec", "platform", "location"), old.Spec.Platform.Location, m.Spec.Platform.Location},
 	}
 
