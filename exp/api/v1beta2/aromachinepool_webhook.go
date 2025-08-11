@@ -121,6 +121,10 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 	}
 	var allErrs field.ErrorList
 
+	// Based on TypeSpec models from ARO-HCP repository
+	// Fields without Lifecycle.Update in @visibility decorator are immutable
+
+	// NodePool name is identity - always immutable
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "nodePollName"),
 		old.Spec.NodePoolName,
@@ -128,6 +132,7 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 		allErrs = append(allErrs, err)
 	}
 
+	// Labels validation (labels are mutable per TypeSpec: @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update))
 	if err := validateLabels(m.Spec.Labels, field.NewPath("spec", "labels")); err != nil {
 		allErrs = append(allErrs,
 			field.Invalid(
@@ -136,6 +141,7 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 				err.Error()))
 	}
 
+	// platform.osDisk: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "platform", "diskSizeGiB"),
 		old.Spec.Platform.DiskSizeGiB,
@@ -144,12 +150,21 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 	}
 
 	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "platform", "diskStorageAccountType"),
+		old.Spec.Platform.DiskStorageAccountType,
+		m.Spec.Platform.DiskStorageAccountType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	// platform.vmSize: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable
+	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "platform", "VMSize"),
 		old.Spec.Platform.VMSize,
 		m.Spec.Platform.VMSize); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
+	// platform.subnetId: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "platform", "subnet"),
 		old.Spec.Platform.Subnet,
@@ -157,14 +172,30 @@ func (mw *aroMachinePoolWebhook) ValidateUpdate(_ context.Context, oldObj, newOb
 		allErrs = append(allErrs, err)
 	}
 
-	if old.Spec.Autoscaling != nil && m.Spec.Autoscaling != nil {
-		if err := webhookutils.ValidateImmutable(
-			field.NewPath("spec", "autoscaling"),
-			old.Spec.Autoscaling,
-			m.Spec.Autoscaling); err != nil {
-			allErrs = append(allErrs, err)
-		}
+	// platform.availabilityZone: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "platform", "availabilityZone"),
+		old.Spec.Platform.AvailabilityZone,
+		m.Spec.Platform.AvailabilityZone); err != nil {
+		allErrs = append(allErrs, err)
 	}
+
+	// autoRepair: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "autoRepair"),
+		old.Spec.AutoRepair,
+		m.Spec.AutoRepair); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	// Note: autoScaling has @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// so it is mutable and should not be validated as immutable here
+	// Note: version has @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// so it is mutable and should not be validated as immutable here
+	// Note: replicas has @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// so it is mutable and should not be validated as immutable here
+	// Note: taints have @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// so they are mutable and should not be validated as immutable here
 
 	if len(allErrs) == 0 {
 		return nil, m.Validate(mw.Client)

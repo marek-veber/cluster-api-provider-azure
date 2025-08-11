@@ -90,14 +90,29 @@ func (mw *aroControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newO
 		return nil, apierrors.NewBadRequest("expected an AROControlPlane")
 	}
 
+	// Based on TypeSpec models from ARO-HCP repository and service layer immutability requirements
+	// Fields without Lifecycle.Update in @visibility decorator are immutable
 	immutableFields := []struct {
 		path *field.Path
 		old  interface{}
 		new  interface{}
 	}{
-		{field.NewPath("spec", "platform", "resourceGroup"), old.Spec.Platform.ResourceGroup, m.Spec.Platform.ResourceGroup},
-		{field.NewPath("spec", "platform", "location"), old.Spec.Platform.Location, m.Spec.Platform.Location},
+		// aroClusterName is cluster identity - always immutable
+		{field.NewPath("spec", "aroClusterName"), old.Spec.AroClusterName, m.Spec.AroClusterName},
+		// platform.networkSecurityGroupId: @visibility(Lifecycle.Read, Lifecycle.Create)
 		{field.NewPath("spec", "platform", "networkSecurityGroupID"), old.Spec.Platform.NetworkSecurityGroupID, m.Spec.Platform.NetworkSecurityGroupID},
+		// platform.subnetId: @visibility(Lifecycle.Read, Lifecycle.Create)
+		{field.NewPath("spec", "platform", "subnet"), old.Spec.Platform.Subnet, m.Spec.Platform.Subnet},
+		// platform.outboundType: @visibility(Lifecycle.Read, Lifecycle.Create)
+		{field.NewPath("spec", "platform", "outboundType"), old.Spec.Platform.OutboundType, m.Spec.Platform.OutboundType},
+		// platform.managedResourceGroup: @visibility(Lifecycle.Read, Lifecycle.Create)
+		{field.NewPath("spec", "platform", "resourceGroup"), old.Spec.Platform.ResourceGroup, m.Spec.Platform.ResourceGroup},
+		// api.visibility: @visibility(Lifecycle.Read, Lifecycle.Create)
+		{field.NewPath("spec", "visibility"), old.Spec.Visibility, m.Spec.Visibility},
+		// version.id: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable per TypeSpec
+		{field.NewPath("spec", "version"), old.Spec.Version, m.Spec.Version},
+                // TODO: location seems to be immutable too
+		{field.NewPath("spec", "platform", "location"), old.Spec.Platform.Location, m.Spec.Platform.Location},
 	}
 
 	for _, f := range immutableFields {
@@ -106,6 +121,7 @@ func (mw *aroControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newO
 		}
 	}
 
+	// domainPrefix (dns.baseDomainPrefix): @visibility(Lifecycle.Read, Lifecycle.Create) - immutable per TypeSpec
 	if m.Spec.DomainPrefix != "" {
 		if err := webhookutils.ValidateImmutable(
 			field.NewPath("spec", "domainPrefix"),
@@ -116,16 +132,12 @@ func (mw *aroControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newO
 		}
 	}
 
-	// Consider removing this once moves out of preview
-	// Updating outboundType after cluster creation (PREVIEW)
-	// https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#updating-outboundtype-after-cluster-creation-preview
-	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "platform", "outboundType"),
-		old.Spec.Platform.OutboundType,
-		m.Spec.Platform.OutboundType); err != nil {
-		allErrs = append(allErrs, err)
-	}
+	// Note: version.id is immutable per TypeSpec: @visibility(Lifecycle.Read, Lifecycle.Create)
+	// Note: channelGroup is mutable per TypeSpec: @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// Note: platform.operatorsAuthentication has @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
+	// so managedIdentities are mutable and should not be validated as immutable here
 
+	// Network fields: @visibility(Lifecycle.Read, Lifecycle.Create) - immutable per TypeSpec
 	if errs := m.validateNetworkUpdate(old); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
