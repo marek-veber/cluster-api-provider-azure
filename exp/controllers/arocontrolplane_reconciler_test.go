@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	_ = `apiVersion: v1
+	TestKubeconfigWithValidCA = `apiVersion: v1
 clusters:
 - cluster:
     server: https://test-api.example.com:443
