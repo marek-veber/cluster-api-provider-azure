@@ -312,12 +312,12 @@ func checkChange[V comparable](path string, old, updated *V, changes *[]string) 
 	return true
 }
 
-// checkImmutable detects changes to immutable fields and reverts them
+// checkImmutable detects changes to immutable fields and reverts them.
 // This implements a "log and fix" approach:
-// 1. Detects if the field value has changed
-// 2. Reverts the change by setting updated = old
-// 3. Logs the change attempt to the changes slice
-// 4. Does NOT return an error - the operation continues
+//  1. Detects if the field value has changed
+//  2. Reverts the change by setting updated = old
+//  3. Logs the change attempt to the changes slice
+//  4. Does NOT return an error - the operation continues
 func checkImmutable[V comparable](path string, old, updated **V, changes *[]string) bool {
 	if checkChange(path, *old, *updated, changes) {
 		*updated = *old
