@@ -26,8 +26,8 @@ import (
 
 // AROMachinePoolSpec defines the desired state of AROMachinePool.
 type AROMachinePoolSpec struct {
-	// NodePoolName specifies the name of the nodepool in ARO
-	// must be a valid DNS-1035 label, so it must consist of lower case alphanumeric and have a max length of 15 characters.
+	// NodePoolName specifies the name of the nodepool in ARO.
+	// It must be a valid DNS-1035 label, so it must consist of lower case alphanumeric characters and have a maximum length of 15 characters.
 	//
 	// +immutable
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="nodepoolName is immutable"
@@ -41,7 +41,7 @@ type AROMachinePoolSpec struct {
 	// +optional
 	Version string `json:"version,omitempty"`
 
-	// OpenShift version channel group, default is stable.
+	// OpenShift version channel group; default is stable.
 	//
 	// +kubebuilder:validation:Enum=stable;candidate;nightly
 	// +kubebuilder:default=stable
@@ -64,7 +64,7 @@ type AROMachinePoolSpec struct {
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
 	// AutoRepair specifies whether health checks should be enabled for machines
-	// in the NodePool. The default is true.
+	// in the NodePool; default is true.
 	// +kubebuilder:default=true
 	// +optional
 	AutoRepair bool `json:"autoRepair,omitempty"`
@@ -85,7 +85,7 @@ type AROPlatformProfileMachinePool struct {
 	// Azure subnet id
 	Subnet string `json:"subnet,omitempty"`
 
-	// Subnet Ref name that is used to create the VirtualNetworksSubnet CR. The SubnetRef must be in the same namespace as the AROMachinePool and cannot be set with Subnet.
+	// SubnetRef is the name that is used to create the VirtualNetworksSubnet CR. The SubnetRef must be in the same namespace as the AROMachinePool and cannot be set with Subnet.
 	SubnetRef string `json:"subnetRef,omitempty"`
 
 	// VMSize sets the VM disk volume size to the node.
@@ -160,7 +160,7 @@ type AROMachinePoolStatus struct {
 	AvailableUpgrades []string `json:"availableUpgrades,omitempty"`
 
 	// ProvisioningState represents the asynchronous provisioning state of an ARM resource.
-	// Allowed values are; Succeeded, Failed, Canceled, Accepted, Deleting, Provisioning and Updating.
+	// Allowed values are: Succeeded, Failed, Canceled, Accepted, Deleting, Provisioning, and Updating.
 	ProvisioningState string `json:"provisioningState,omitempty"`
 
 	// ARO-HCP OpenShift version X.Y (without Z-stream), for example "4.20".

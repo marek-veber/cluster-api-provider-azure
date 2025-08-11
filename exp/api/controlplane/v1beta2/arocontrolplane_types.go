@@ -43,9 +43,9 @@ const (
 
 // AROControlPlaneSpec defines the desired state of AROControlPlane.
 type AROControlPlaneSpec struct { //nolint: maligned
-	// Cluster name must be valid DNS-1035 label, so it must consist of lower case alphanumeric
-	// characters or '-', start with an alphabetic character, end with an alphanumeric character
-	// and have a max length of 54 characters.
+	// Cluster name must be a valid DNS-1035 label, so it must consist of lower case alphanumeric
+	// characters or '-', start with an alphabetic character, end with an alphanumeric character,
+	// and have a maximum length of 54 characters.
 	//
 	// +immutable
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="aroClusterName is immutable"
@@ -56,7 +56,7 @@ type AROControlPlaneSpec struct { //nolint: maligned
 	// AROPlatformProfileControlPlane represents the Azure platform configuration.
 	Platform AROPlatformProfileControlPlane `json:"platform,omitempty"`
 
-	// Visibility represents the visibility of an API endpoint. Allowed values are public and private default is public.
+	// Visibility represents the visibility of an API endpoint. Allowed values are public and private; default is public.
 	Visibility string `json:"visibility,omitempty"`
 
 	// Network config for the ARO HCP cluster.
@@ -64,9 +64,9 @@ type AROControlPlaneSpec struct { //nolint: maligned
 	Network *NetworkSpec `json:"network,omitempty"`
 
 	// DomainPrefix is an optional prefix added to the cluster's domain name. It will be used
-	// when generating a sub-domain for the cluster on openshiftapps domain. It must be valid DNS-1035 label
-	// consisting of lower case alphanumeric characters or '-', start with an alphabetic character
-	// end with an alphanumeric character and have a max length of 15 characters.
+	// when generating a sub-domain for the cluster on the openshiftapps domain. It must be a valid DNS-1035 label
+	// consisting of lower case alphanumeric characters or '-', start with an alphabetic character,
+	// end with an alphanumeric character, and have a maximum length of 15 characters.
 	//
 	// +immutable
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="domainPrefix is immutable"
@@ -78,7 +78,7 @@ type AROControlPlaneSpec struct { //nolint: maligned
 	// OpenShift semantic version, for example "4.14.5".
 	Version string `json:"version"`
 
-	// OpenShift version channel group, default is stable.
+	// OpenShift version channel group; default is stable.
 	//
 	// +kubebuilder:validation:Enum=stable;candidate;nightly
 	// +kubebuilder:default=stable
@@ -111,13 +111,13 @@ type AROPlatformProfileControlPlane struct {
 	// Resource group name where the ARO-hcp will be attached to it.
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
-	// ResourceGroup Ref name that is used to create the ResourceGroup CR. The ResourceGroupRef must be in the same namespace as the AROControlPlane and cannot be set with ResourceGroup.
+	// ResourceGroupRef is the name that is used to create the ResourceGroup CR. The ResourceGroupRef must be in the same namespace as the AROControlPlane and cannot be set with ResourceGroup.
 	ResourceGroupRef string `json:"resourceGroupRef,omitempty"`
 
 	// Azure subnet id
 	Subnet string `json:"subnet,omitempty"`
 
-	// Subnet Ref name that is used to create the VirtualNetworksSubnet CR. The SubnetRef must be in the same namespace as the AROControlPlane and cannot be set with Subnet.
+	// SubnetRef is the name that is used to create the VirtualNetworksSubnet CR. The SubnetRef must be in the same namespace as the AROControlPlane and cannot be set with Subnet.
 	SubnetRef string `json:"subnetRef,omitempty"`
 
 	// OutboundType represents a routing strategy to provide egress to the Internet. Allowed value is loadBalancer
@@ -210,7 +210,7 @@ type NetworkSpec struct {
 	// +optional
 	HostPrefix int `json:"hostPrefix,omitempty"`
 
-	// The CNI network type default is OVNKubernetes.
+	// The CNI network type; default is OVNKubernetes.
 	// +kubebuilder:validation:Enum=OVNKubernetes;Other
 	// +kubebuilder:default=OVNKubernetes
 	// +optional
