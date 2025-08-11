@@ -190,7 +190,7 @@ func (m *AROControlPlane) validateDNSPrefix(_ client.Client) field.ErrorList {
 func validateOCPVersion(version string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if !ocpSemver.MatchString(version) {
-		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be a in format <X.Y>"))
+		allErrs = append(allErrs, field.Invalid(fldPath, version, "must be in format <X.Y>"))
 	}
 
 	return allErrs

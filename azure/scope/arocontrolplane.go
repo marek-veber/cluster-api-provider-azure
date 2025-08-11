@@ -256,7 +256,7 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(_ context.Context) azure
 		Subnet:                 s.ControlPlane.Spec.Platform.Subnet,
 		OutboundType:           s.ControlPlane.Spec.Platform.OutboundType,
 		Network:                s.ControlPlane.Spec.Network,
-		Version:                s.ControlPlane.Spec.Version + ".0", // TODO: just a temporary fix for the ARO-HCP bug
+		Version:                s.ControlPlane.Spec.Version + ".0", // TODO: temporary fix for the ARO-HCP bug
 		ChannelGroup:           s.ControlPlane.Spec.ChannelGroup,
 		Visibility:             s.ControlPlane.Spec.Visibility,
 	}
@@ -273,8 +273,8 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterCredentialsSpecs(_ context.Con
 	return ret
 }
 
-// AnnotateKubeconfigInvalid add annotation aro.azure.com/kubeconfig-refresh-needed: true
-// This mark this secret as invalid.
+// AnnotateKubeconfigInvalid adds annotation aro.azure.com/kubeconfig-refresh-needed: true.
+// This marks this secret as invalid.
 func (s *AROControlPlaneScope) AnnotateKubeconfigInvalid(ctx context.Context) error {
 	kubeconfigSecret := s.MakeEmptyKubeConfigSecret()
 	key := client.ObjectKeyFromObject(&kubeconfigSecret)

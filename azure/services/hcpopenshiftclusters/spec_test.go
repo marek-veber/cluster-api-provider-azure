@@ -70,7 +70,7 @@ func TestParameters(t *testing.T) {
 			name:     "unsupported visibility type",
 			spec:     fakeHcpOpenShiftClustersSpecWithInvalidVisibility(),
 			existing: nil,
-			errorMsg: "unsupported visibilit type InvalidType",
+			errorMsg: "unsupported visibility type InvalidType",
 		},
 		{
 			name:     "immutable managedResourceGroup changed - should not error",
