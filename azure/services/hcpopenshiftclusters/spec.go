@@ -74,7 +74,7 @@ func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedI
 			"file-csi-driver":          &s.ManagedIdentities.ControlPlaneOperators.FileCsiDriverManagedIdentities,
 			"image-registry":           &s.ManagedIdentities.ControlPlaneOperators.ImageRegistryManagedIdentities,
 			"cloud-network-config":     &s.ManagedIdentities.ControlPlaneOperators.CloudNetworkConfigManagedIdentities,
-			// TODO: mveber - update mohamed's proposal - kms should be removed
+			// TODO: mveber - update Mohamed's proposal - KMS should be removed
 			// "kms":                      &s.ManagedIdentities.ControlPlaneOperators.KmsManagedIdentities,
 		},
 		DataPlaneOperators: map[string]*string{
@@ -92,7 +92,7 @@ func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedI
 	}
 	midsMap := []map[string]*string{
 		userAssignedIdentities.ControlPlaneOperators,
-		// TODO: mveber - why it cannot be here		userAssignedIdentities.DataPlaneOperators,
+		// TODO: mveber - why can't this be here: userAssignedIdentities.DataPlaneOperators,
 		{"": userAssignedIdentities.ServiceManagedIdentity},
 	}
 	for _, midMap := range midsMap {
@@ -106,7 +106,7 @@ func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedI
 	return userAssignedIdentities, managedServiceIdentity
 }
 
-// getTags - convert AdditionalTags.
+// getTags converts AdditionalTags to the required format.
 func (s *HcpOpenShiftClustersSpec) getTags() map[string]*string {
 	ret := map[string]*string{}
 	for k, v := range s.AdditionalTags {
@@ -115,12 +115,12 @@ func (s *HcpOpenShiftClustersSpec) getTags() map[string]*string {
 	return ret
 }
 
-// getManagedResourceGroup - returns manager resource group name.
+// getManagedResourceGroup returns the managed resource group name.
 func (s *HcpOpenShiftClustersSpec) getManagedResourceGroup() *string {
 	return &s.NodeResourceGroup
 }
 
-// getManagedResourceGroup - returns manager resource group name.
+// getOutboundType returns the outbound type for the cluster.
 func (s *HcpOpenShiftClustersSpec) getOutboundType() (*arohcp.OutboundType, error) {
 	if s.OutboundType == "LoadBalancer" {
 		outboundType := arohcp.OutboundTypeLoadBalancer
@@ -129,7 +129,7 @@ func (s *HcpOpenShiftClustersSpec) getOutboundType() (*arohcp.OutboundType, erro
 	return nil, errors.Errorf("unsupported outbound type %s", s.OutboundType)
 }
 
-// getNetworkType - returns network type.
+// getNetworkType returns the network type for the cluster.
 func (s *HcpOpenShiftClustersSpec) getNetworkType() (*arohcp.NetworkType, error) {
 	if s.Network.NetworkType == "OVNKubernetes" {
 		networkType := arohcp.NetworkTypeOVNKubernetes
@@ -142,7 +142,7 @@ func (s *HcpOpenShiftClustersSpec) getNetworkType() (*arohcp.NetworkType, error)
 	return nil, errors.Errorf("unsupported network type %s", s.Network.NetworkType)
 }
 
-// getVisibility - returns visibility type.
+// getVisibility returns the visibility type for the cluster.
 func (s *HcpOpenShiftClustersSpec) getVisibility() (*arohcp.Visibility, error) {
 	if s.Visibility == "Private" {
 		visibility := arohcp.VisibilityPrivate
@@ -152,7 +152,7 @@ func (s *HcpOpenShiftClustersSpec) getVisibility() (*arohcp.Visibility, error) {
 		visibility := arohcp.VisibilityPublic
 		return &visibility, nil
 	}
-	return nil, errors.Errorf("unsupported visibilit type %s", s.Visibility)
+	return nil, errors.Errorf("unsupported visibility type %s", s.Visibility)
 }
 
 // Parameters returns the parameters for the HcpOpenShiftCluster.
@@ -201,7 +201,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 			},
 			//Autoscaling:          nil,
 			ClusterImageRegistry: &arohcp.ClusterImageRegistryProfile{
-				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled), // TODO: when Disabled
+				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled), // TODO: when should this be Disabled?
 			},
 			// Capabilities: &arohcp.ClusterCapabilitiesProfile{Disabled: nil},
 			DNS: &arohcp.DNSProfile{

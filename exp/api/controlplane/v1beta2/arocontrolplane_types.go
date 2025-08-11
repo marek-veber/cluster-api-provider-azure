@@ -226,7 +226,7 @@ type AROControlPlaneStatus struct {
 	// initialization provides observations of the AROControlPlane initialization process.
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
-	Initialization *AROControlPlaneInitializationStatus `json:"initialization,omitempty"` // TODO: mvwbwe - Mohames's proposal is for v1beta1
+	Initialization *AROControlPlaneInitializationStatus `json:"initialization,omitempty"` // TODO: mveber - Mohamed's proposal is for v1beta1
 	// Ready denotes that the AROControlPlane API Server is ready to receive requests.
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
@@ -253,7 +253,7 @@ type AROControlPlaneStatus struct {
 	APIURL string `json:"apiURL,omitempty"`
 
 	// ARO-HCP OpenShift semantic version, for example "4.20.0".
-	// TODO: mveber - mohamed's proposal +omitempty
+	// TODO: mveber - Mohamed's proposal includes +omitempty
 	Version string `json:"version,omitempty"`
 
 	// Available upgrades for the ARO hosted control plane.

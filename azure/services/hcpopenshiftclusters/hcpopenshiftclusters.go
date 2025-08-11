@@ -36,7 +36,7 @@ import (
 const serviceName = "hcpopenshiftclusters"
 
 type (
-	// HcpOpenShiftClusterScope defines the scope interface for a hcpOpenShiftcluster service.
+	// HcpOpenShiftClusterScope defines the scope interface for an HCP OpenShift cluster service.
 	HcpOpenShiftClusterScope interface {
 		azure.Authorizer
 		azure.AsyncStatusUpdater
@@ -77,7 +77,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile idempotently gets, creates, and updates a hcpOpenShiftcluster.
+// Reconcile idempotently gets, creates, and updates an HCP OpenShift cluster.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Service.Reconcile")
 	defer done()
@@ -110,7 +110,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 		}
 	} else if !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to get existing hcpOpenShiftCluster")
+		return errors.Wrapf(err, "failed to get existing HCP OpenShift cluster")
 	}
 
 	result, err = s.CreateOrUpdateResource(ctx, hcpOpenShiftClusterSpecs, serviceName)
@@ -125,10 +125,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return err
 }
 
-// updateScopeState updates the scope's hcpOpenShiftCluster state and provider ID
+// updateScopeState updates the scope's HCP OpenShift cluster state and provider ID.
 //
-// Code later in the reconciler uses scope's hcpOpenShiftCluster state for determining HcpOpenShiftCluster status and whether to create/delete
-// HcpOpenShiftCluster.
+// Code later in the reconciler uses the scope's HCP OpenShift cluster state for determining cluster status and whether to create/delete
+// the HCP OpenShift cluster.
 func (s *Service) updateScopeState(_ context.Context, result interface{}, _ *HcpOpenShiftClustersSpec) error {
 	hcpOpenShiftCluster, ok := result.(arohcp.HcpOpenShiftCluster)
 	if !ok {
@@ -141,8 +141,8 @@ func (s *Service) updateScopeState(_ context.Context, result interface{}, _ *Hcp
 	return nil
 }
 
-// Delete deletes a HcpOpenShiftCluster asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
-// The actual delete in Azure may take longer, but should eventually complete.
+// Delete deletes an HCP OpenShift cluster asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
+// the actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Service.Delete")
 	defer done()
@@ -157,7 +157,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 	log.Info(fmt.Sprintf("Delete: %s", hcpOpenShiftClusterSpecs.Name))
 
-	// We go through the list of HcpOpenShiftClustersSpecs to delete each one, independently of the result of the previous one.
+	// We go through the list of HCP OpenShift cluster specs to delete each one, independently of the result of the previous one.
 	// If multiple errors occur, we return the most pressing one.
 	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (i.e. error creating) -> operationNotDoneError (i.e. creating in progress) -> no error (i.e. created)
 	var result error
@@ -247,7 +247,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	return nil
 }
 
-// IsManaged returns always returns true as CAPZ does not support BYO HcpOpenShiftCluster.
+// IsManaged always returns true as CAPZ does not support BYO HCP OpenShift clusters.
 func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
 }
