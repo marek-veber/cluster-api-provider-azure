@@ -219,6 +219,7 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(ctx context.Context, existing inte
 			checkImmutable("properties.autoRepair", &existingNodePool.Properties.AutoRepair, &ret.Properties.AutoRepair, &immutable)
 
 			// Version handling - id is immutable, channelGroup is mutable
+			// NodePool uses NodePoolVersionProfile where both fields have @visibility(Lifecycle.Update)
 			if existingNodePool.Properties.Version == nil {
 				changes = append(changes, "adding properties.version: nil -> new value")
 			} else {
