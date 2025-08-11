@@ -18,6 +18,7 @@ package hcpopenshiftnodepools
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/pkg/errors"
@@ -26,6 +27,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // HcpOpenShiftNodePoolSpec defines the specification for a NodePool.
@@ -118,7 +120,9 @@ func (s *HcpOpenShiftNodePoolSpec) getLabels() []*arohcp.Label {
 }
 
 // Parameters returns the parameters for the NodePool.
-func (s *HcpOpenShiftNodePoolSpec) Parameters(_ context.Context, existing interface{}) (params interface{}, err error) {
+func (s *HcpOpenShiftNodePoolSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
+	_, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftnodepools.Parameters")
+	defer done()
 	var existingNodePool *arohcp.NodePool
 	if existing != nil {
 		nodePool, ok := existing.(arohcp.NodePool)
@@ -184,69 +188,120 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(_ context.Context, existing interf
 	}
 	if existingNodePool != nil {
 		ret.ID = existingNodePool.ID
-		// we cannot change this
-		ret.Properties.Platform = existingNodePool.Properties.Platform
-		ret.Properties.AutoRepair = existingNodePool.Properties.AutoRepair
 
-		changed := false
+		// Track changes and immutable field violations
+		changes := []string{}
+		immutable := []string{}
+
 		// TODO: why is existingNodePool.Location == nil :(
-		//		if existingNodePool.Location == nil || *ret.Location != *existingNodePool.Location {
-		//			changed = true
-		//		}
+		checkChange("location", existingNodePool.Location, ret.Location, &changes)
+
 		if existingNodePool.Properties == nil {
-			changed = true
+			changes = append(changes, "adding properties: nil -> new value")
 		} else {
-			if (existingNodePool.Properties.AutoScaling == nil) != (ret.Properties.AutoScaling == nil) {
-				changed = true
-			} else if (existingNodePool.Properties.AutoScaling != nil) && (ret.Properties.AutoScaling != nil) {
-				if cmpPtr(existingNodePool.Properties.AutoScaling.Min, ret.Properties.AutoScaling.Min) {
-					changed = true
-				}
-				if cmpPtr(existingNodePool.Properties.AutoScaling.Max, ret.Properties.AutoScaling.Max) {
-					changed = true
-				}
-			}
-			if cmpArray(existingNodePool.Properties.Labels, ret.Properties.Labels) {
-				changed = true
-			}
-			if cmpPtr(existingNodePool.Properties.Replicas, ret.Properties.Replicas) {
-				changed = true
-			}
-			if cmpArray(existingNodePool.Properties.Taints, ret.Properties.Taints) {
-				changed = true
-			}
-			if existingNodePool.Properties.Version == nil {
-				changed = true
+			if existingNodePool.Properties.Platform == nil {
+				changes = append(changes, "adding properties.platform: nil -> new value")
 			} else {
-				if cmpPtr(existingNodePool.Properties.Version.ID, ret.Properties.Version.ID) {
-					changed = true
+				// Platform fields - most are immutable per TypeSpec
+				checkImmutable("properties.platform.vmSize", &existingNodePool.Properties.Platform.VMSize, &ret.Properties.Platform.VMSize, &immutable)
+				checkImmutable("properties.platform.availabilityZone", &existingNodePool.Properties.Platform.AvailabilityZone, &ret.Properties.Platform.AvailabilityZone, &immutable)
+				checkImmutable("properties.platform.subnetID", &existingNodePool.Properties.Platform.SubnetID, &ret.Properties.Platform.SubnetID, &immutable)
+
+				if existingNodePool.Properties.Platform.OSDisk == nil {
+					changes = append(changes, "adding properties.platform.osDisk: nil -> new value")
+				} else {
+					checkImmutable("properties.platform.osDisk.sizeGiB", &existingNodePool.Properties.Platform.OSDisk.SizeGiB, &ret.Properties.Platform.OSDisk.SizeGiB, &immutable)
+					checkImmutable("properties.platform.osDisk.diskStorageAccountType", &existingNodePool.Properties.Platform.OSDisk.DiskStorageAccountType, &ret.Properties.Platform.OSDisk.DiskStorageAccountType, &immutable)
 				}
-				if cmpPtr(existingNodePool.Properties.Version.ChannelGroup, ret.Properties.Version.ChannelGroup) {
-					changed = true
-				}
+			}
+
+			// AutoRepair is immutable per TypeSpec
+			checkImmutable("properties.autoRepair", &existingNodePool.Properties.AutoRepair, &ret.Properties.AutoRepair, &immutable)
+
+			// Version handling - id is immutable, channelGroup is mutable
+			if existingNodePool.Properties.Version == nil {
+				changes = append(changes, "adding properties.version: nil -> new value")
+			} else {
+				checkImmutable("properties.version.id", &existingNodePool.Properties.Version.ID, &ret.Properties.Version.ID, &immutable)
+				checkChange("properties.version.channelGroup", existingNodePool.Properties.Version.ChannelGroup, ret.Properties.Version.ChannelGroup, &changes)
+			}
+
+			// Mutable fields - these can be changed
+			checkChangeAutoScaling("properties.autoScaling", existingNodePool.Properties.AutoScaling, ret.Properties.AutoScaling, &changes)
+			checkChangeLabels("properties.labels", existingNodePool.Properties.Labels, ret.Properties.Labels, &changes)
+			checkChange("properties.replicas", existingNodePool.Properties.Replicas, ret.Properties.Replicas, &changes)
+			checkChangeTaints("properties.taints", existingNodePool.Properties.Taints, ret.Properties.Taints, &changes)
+		}
+
+		checkChangeMap("tags", existingNodePool.Tags, ret.Tags, &changes)
+
+		// Log immutable field changes and revert them (no error returned)
+		// The checkImmutable() function automatically reverts changes to immutable fields
+		// This implements a "log and fix" approach rather than failing the operation
+		if len(immutable) > 0 {
+			for _, msg := range immutable {
+				log.Info(fmt.Sprintf("cannot update immutable field %s", msg))
 			}
 		}
-		if !changed {
+		if len(changes) == 0 {
 			return nil, nil
+		}
+		for _, msg := range changes {
+			log.Info(fmt.Sprintf("changing field %s", msg))
 		}
 	}
 	return ret, nil
 }
 
-func cmpArray[T arohcp.Taint | arohcp.Label](a1 []*T, a2 []*T) bool {
-	if len(a1) != len(a2) {
+// Helper functions for change detection and immutability enforcement.
+
+func ptrToS(a any) string {
+	if a == nil {
+		return "nil"
+	}
+	switch msg := a.(type) {
+	case *string:
+		return fmt.Sprintf("%q", *msg)
+	case *int32:
+		return fmt.Sprintf("%d", *msg)
+	case *bool:
+		return fmt.Sprintf("%t", *msg)
+	default:
+		return fmt.Sprintf("%T:???", msg)
+	}
+}
+
+func checkChange[V comparable](path string, old, updated *V, changes *[]string) bool {
+	if ptr.Equal(old, updated) {
+		return false
+	}
+	*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(old), ptrToS(updated)))
+	return true
+}
+
+// checkImmutable detects changes to immutable fields and reverts them.
+// This implements a "log and fix" approach:
+//  1. Detects if the field value has changed
+//  2. Reverts the change by setting updated = old
+//  3. Logs the change attempt to the changes slice
+//  4. Does NOT return an error - the operation continues
+func checkImmutable[V comparable](path string, old, updated **V, changes *[]string) bool {
+	if checkChange(path, *old, *updated, changes) {
+		*updated = *old
 		return true
 	}
-	if len(a1) > 0 {
-		for _, l1 := range a1 {
-			c1 := false
-			for _, l2 := range a2 {
-				if !cmpPtr(l1, l2) {
-					c1 = true
-					break
-				}
-			}
-			if !c1 {
+	return false
+}
+
+func checkChangeMap(path string, m1 map[string]*string, m2 map[string]*string, changes *[]string) bool {
+	if len(m1) != len(m2) {
+		*changes = append(*changes, fmt.Sprintf("%s.len: %d -> %d", path, len(m1), len(m2)))
+		return true
+	}
+	if len(m1) > 0 {
+		for k, v := range m1 {
+			if !ptr.Equal(m2[k], v) {
+				*changes = append(*changes, fmt.Sprintf("%s[%q]: %s -> %s", path, k, ptrToS(v), ptrToS(m2[k])))
 				return true
 			}
 		}
@@ -254,23 +309,63 @@ func cmpArray[T arohcp.Taint | arohcp.Label](a1 []*T, a2 []*T) bool {
 	return false
 }
 
-func cmpPtr[V string | bool | int32 | arohcp.DiskStorageAccountType | arohcp.Taint | arohcp.Effect | arohcp.Label](s1 *V, s2 *V) bool {
-	if (s1 == nil) != (s2 == nil) {
+func checkChangeAutoScaling(path string, a1, a2 *arohcp.NodePoolAutoScaling, changes *[]string) bool {
+	if (a1 == nil) != (a2 == nil) {
+		*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(a1), ptrToS(a2)))
 		return true
 	}
-	if (s1 != nil) && (s2 != nil) {
-		switch t1 := any(s1).(type) {
-		case *arohcp.Label:
-			if t2, ok := any(s2).(*arohcp.Label); ok {
-				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value)
+	if a1 != nil && a2 != nil {
+		if checkChange(fmt.Sprintf("%s.min", path), a1.Min, a2.Min, changes) ||
+			checkChange(fmt.Sprintf("%s.max", path), a1.Max, a2.Max, changes) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkChangeLabels(path string, l1, l2 []*arohcp.Label, changes *[]string) bool {
+	if len(l1) != len(l2) {
+		*changes = append(*changes, fmt.Sprintf("%s.len: %d -> %d", path, len(l1), len(l2)))
+		return true
+	}
+	if len(l1) > 0 {
+		for _, label1 := range l1 {
+			found := false
+			for _, label2 := range l2 {
+				if ptr.Equal(label1.Key, label2.Key) && ptr.Equal(label1.Value, label2.Value) {
+					found = true
+					break
+				}
 			}
-		case *arohcp.Taint:
-			if t2, ok := any(s2).(*arohcp.Taint); ok {
-				return cmpPtr(t1.Key, t2.Key) || cmpPtr(t1.Value, t2.Value) || cmpPtr(t1.Effect, t2.Effect)
+			if !found {
+				*changes = append(*changes, fmt.Sprintf("%s: label changed", path))
+				return true
 			}
 		}
-		if *s1 != *s2 {
-			return true
+	}
+	return false
+}
+
+func checkChangeTaints(path string, t1, t2 []*arohcp.Taint, changes *[]string) bool {
+	if len(t1) != len(t2) {
+		*changes = append(*changes, fmt.Sprintf("%s.len: %d -> %d", path, len(t1), len(t2)))
+		return true
+	}
+	if len(t1) > 0 {
+		for _, taint1 := range t1 {
+			found := false
+			for _, taint2 := range t2 {
+				if ptr.Equal(taint1.Key, taint2.Key) &&
+					ptr.Equal(taint1.Value, taint2.Value) &&
+					ptr.Equal(taint1.Effect, taint2.Effect) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				*changes = append(*changes, fmt.Sprintf("%s: taint changed", path))
+				return true
+			}
 		}
 	}
 	return false
