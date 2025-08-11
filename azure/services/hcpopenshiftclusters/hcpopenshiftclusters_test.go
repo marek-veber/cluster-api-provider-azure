@@ -79,7 +79,7 @@ var (
 			PodCIDR:     "10.128.0.0/14",
 			HostPrefix:  23,
 		},
-		Version:      "4.19.0",
+		Version:      "4.19",
 		ChannelGroup: v1beta2.Stable,
 		Visibility:   "Public",
 	}
@@ -371,7 +371,7 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 			},
 			Version: &arohcp.VersionProfile{
 				ChannelGroup: ptr.To("stable"),
-				ID:           ptr.To("4.19.0"),
+				ID:           ptr.To("4.19"),
 			},
 			API: &arohcp.APIProfile{
 				Visibility: &visibility,
