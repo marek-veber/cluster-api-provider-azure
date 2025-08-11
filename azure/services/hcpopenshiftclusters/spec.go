@@ -247,32 +247,35 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 			} else {
 				checkImmutable("properties.platform.networkSecurityGroupId", &existingHcpOpenShiftCluster.Properties.Platform.NetworkSecurityGroupID, &ret.Properties.Platform.NetworkSecurityGroupID, &immutable)
 				checkChangeIdentities("properties.platform.operatorsAuthentication", existingHcpOpenShiftCluster.Properties.Platform.OperatorsAuthentication, ret.Properties.Platform.OperatorsAuthentication, &changes)
-				checkChange("properties.platform.subnetID", existingHcpOpenShiftCluster.Properties.Platform.SubnetID, ret.Properties.Platform.SubnetID, &changes)
+				checkImmutable("properties.platform.subnetID", &existingHcpOpenShiftCluster.Properties.Platform.SubnetID, &ret.Properties.Platform.SubnetID, &immutable)
 				checkImmutable("properties.platform.managedResourceGroup", &existingHcpOpenShiftCluster.Properties.Platform.ManagedResourceGroup, &ret.Properties.Platform.ManagedResourceGroup, &immutable)
-				checkChange("Properties.Platform.OutboundType", existingHcpOpenShiftCluster.Properties.Platform.OutboundType, ret.Properties.Platform.OutboundType, &changes)
+				checkImmutable("properties.platform.outboundType", &existingHcpOpenShiftCluster.Properties.Platform.OutboundType, &ret.Properties.Platform.OutboundType, &immutable)
 			}
 			if existingHcpOpenShiftCluster.Properties.Network == nil {
 				changes = append(changes, "adding properties.network: nil -> new value")
 			} else {
-				checkChange("properties.network.networkType", existingHcpOpenShiftCluster.Properties.Network.NetworkType, ret.Properties.Network.NetworkType, &changes)
-				checkChange("properties.network.hostPrefix", existingHcpOpenShiftCluster.Properties.Network.HostPrefix, ret.Properties.Network.HostPrefix, &changes)
-				checkChange("properties.network.machineCidr", existingHcpOpenShiftCluster.Properties.Network.MachineCidr, ret.Properties.Network.MachineCidr, &changes)
-				checkChange("properties.network.podCidr", existingHcpOpenShiftCluster.Properties.Network.PodCidr, ret.Properties.Network.PodCidr, &changes)
-				checkChange("properties.network.serviceCidr", existingHcpOpenShiftCluster.Properties.Network.ServiceCidr, ret.Properties.Network.ServiceCidr, &changes)
+				checkImmutable("properties.network.networkType", &existingHcpOpenShiftCluster.Properties.Network.NetworkType, &ret.Properties.Network.NetworkType, &immutable)
+				checkImmutable("properties.network.hostPrefix", &existingHcpOpenShiftCluster.Properties.Network.HostPrefix, &ret.Properties.Network.HostPrefix, &immutable)
+				checkImmutable("properties.network.machineCidr", &existingHcpOpenShiftCluster.Properties.Network.MachineCidr, &ret.Properties.Network.MachineCidr, &immutable)
+				checkImmutable("properties.network.podCidr", &existingHcpOpenShiftCluster.Properties.Network.PodCidr, &ret.Properties.Network.PodCidr, &immutable)
+				checkImmutable("properties.network.serviceCidr", &existingHcpOpenShiftCluster.Properties.Network.ServiceCidr, &ret.Properties.Network.ServiceCidr, &immutable)
 			}
 			if existingHcpOpenShiftCluster.Properties.Version == nil {
 				changes = append(changes, "adding properties.version: nil -> new value")
 			} else {
 				checkImmutable("properties.version.id", &existingHcpOpenShiftCluster.Properties.Version.ID, &ret.Properties.Version.ID, &immutable)
-				checkImmutable("properties.version.channelGroup", &existingHcpOpenShiftCluster.Properties.Version.ChannelGroup, &ret.Properties.Version.ChannelGroup, &immutable)
+				checkChange("properties.version.channelGroup", existingHcpOpenShiftCluster.Properties.Version.ChannelGroup, ret.Properties.Version.ChannelGroup, &changes)
 			}
 			if existingHcpOpenShiftCluster.Properties.API == nil {
 				changes = append(changes, "adding properties.API: nil -> new value")
 			} else {
-				checkChange("properties.api.Visibility", existingHcpOpenShiftCluster.Properties.API.Visibility, ret.Properties.API.Visibility, &changes)
+				checkImmutable("properties.api.visibility", &existingHcpOpenShiftCluster.Properties.API.Visibility, &ret.Properties.API.Visibility, &immutable)
 			}
 			checkChangeMap("properties.tags", existingHcpOpenShiftCluster.Tags, ret.Tags, &changes)
 		}
+		// Log immutable field changes and revert them (no error returned)
+		// The checkImmutable() function automatically reverts changes to immutable fields
+		// This implements a "log and fix" approach rather than failing the operation
 		if len(immutable) > 0 {
 			for _, msg := range immutable {
 				log.Info(fmt.Sprintf("cannot update immutable field %s", msg))
@@ -308,6 +311,13 @@ func checkChange[V comparable](path string, old, updated *V, changes *[]string) 
 	*changes = append(*changes, fmt.Sprintf("%s: %s -> %s", path, ptrToS(old), ptrToS(updated)))
 	return true
 }
+
+// checkImmutable detects changes to immutable fields and reverts them
+// This implements a "log and fix" approach:
+// 1. Detects if the field value has changed
+// 2. Reverts the change by setting updated = old
+// 3. Logs the change attempt to the changes slice
+// 4. Does NOT return an error - the operation continues
 func checkImmutable[V comparable](path string, old, updated **V, changes *[]string) bool {
 	if checkChange(path, *old, *updated, changes) {
 		*updated = *old

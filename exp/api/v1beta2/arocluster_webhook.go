@@ -47,6 +47,12 @@ func (r *aroClusterWebhook) ValidateCreate(_ context.Context, _ runtime.Object) 
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *aroClusterWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+	// Note: AROClusterSpec currently only has ControlPlaneEndpoint field
+	// The endpoint itself can be updated as it may change during cluster lifecycle
+	// If more fields are added to AROClusterSpec in the future that should be immutable,
+	// they should be added here following the pattern from other ARO webhooks
+	// with proper validation using webhookutils.ValidateImmutable()
+
 	return nil, nil
 }
 

@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
@@ -259,6 +260,113 @@ func TestSetDefaultOCPVersion(t *testing.T) {
 
 			result := setDefaultOCPVersion(tc.inputVersion)
 			g.Expect(result).To(Equal(tc.expectedVersion), tc.description)
+		})
+	}
+}
+
+func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	baseControlPlane := &AROControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cp",
+			Namespace: "default",
+		},
+		Spec: AROControlPlaneSpec{
+			AroClusterName: "test-cluster",
+			Version:        "4.14",
+			ChannelGroup:   "stable",
+			Platform: AROPlatformProfileControlPlane{
+				ResourceGroup:          "test-rg",
+				Location:               "eastus",
+				NetworkSecurityGroupID: "test-nsg",
+				Subnet:                 "test-subnet",
+				OutboundType:           "Loadbalancer",
+			},
+			Visibility: "Public",
+			Network: &NetworkSpec{
+				NetworkType: "OVNKubernetes",
+				MachineCIDR: "10.0.0.0/16",
+				ServiceCIDR: "172.30.0.0/16",
+				PodCIDR:     "10.128.0.0/14",
+				HostPrefix:  23,
+			},
+		},
+	}
+
+	testCases := []struct {
+		name        string
+		modify      func(*AROControlPlane)
+		expectError bool
+		errorField  string
+	}{
+		{
+			name: "version change should fail",
+			modify: func(cp *AROControlPlane) {
+				cp.Spec.Version = "4.15"
+			},
+			expectError: true,
+			errorField:  "spec.version",
+		},
+		{
+			name: "channelGroup change should pass",
+			modify: func(cp *AROControlPlane) {
+				cp.Spec.ChannelGroup = "fast"
+			},
+			expectError: false,
+		},
+		{
+			name: "aroClusterName change should fail",
+			modify: func(cp *AROControlPlane) {
+				cp.Spec.AroClusterName = "different-cluster"
+			},
+			expectError: true,
+			errorField:  "spec.aroClusterName",
+		},
+		{
+			name: "networkSecurityGroupID change should fail",
+			modify: func(cp *AROControlPlane) {
+				cp.Spec.Platform.NetworkSecurityGroupID = "different-nsg"
+			},
+			expectError: true,
+			errorField:  "spec.platform.networkSecurityGroupID",
+		},
+		{
+			name: "no changes should pass",
+			modify: func(cp *AROControlPlane) {
+				// No changes
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			// Create a copy of the base control plane
+			old := baseControlPlane.DeepCopy()
+			new := baseControlPlane.DeepCopy()
+
+			// Apply the modification
+			tc.modify(new)
+
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+			webhook := &aroControlPlaneWebhook{Client: fakeClient}
+
+			_, err := webhook.ValidateUpdate(context.TODO(), old, new)
+
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				if tc.errorField != "" {
+					g.Expect(err.Error()).To(ContainSubstring(tc.errorField))
+				}
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
