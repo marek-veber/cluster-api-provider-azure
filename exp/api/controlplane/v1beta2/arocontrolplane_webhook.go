@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
 
@@ -160,6 +161,7 @@ func (m *AROControlPlane) Validate(cli client.Client) error {
 	validators := []func(client client.Client) field.ErrorList{
 		m.validateIdentity,
 		m.validateDNSPrefix,
+		m.validateManagedIdentities,
 	}
 	for _, validator := range validators {
 		if err := validator(cli); err != nil {
@@ -311,6 +313,112 @@ func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 	return nil
 }
 
+// validateManagedIdentities validates all managed identities in the ManagedIdentities structure.
+func (m *AROControlPlane) validateManagedIdentities(_ client.Client) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// Check if ManagedIdentities is zero value (empty struct)
+	if reflect.DeepEqual(m.Spec.Platform.ManagedIdentities, ManagedIdentities{}) {
+		return allErrs
+	}
+
+	managedIdentities := m.Spec.Platform.ManagedIdentities
+	basePath := field.NewPath("spec", "platform", "managedIdentities")
+
+	// Validate ServiceManagedIdentity
+	if managedIdentities.ServiceManagedIdentity != "" {
+		if errs := validateUserAssignedIdentity(managedIdentities.ServiceManagedIdentity, basePath.Child("serviceManagedIdentity")); len(errs) > 0 {
+			allErrs = append(allErrs, errs...)
+		}
+	}
+
+	// Validate ControlPlaneOperators identities
+	if managedIdentities.ControlPlaneOperators != nil {
+		controlPlanePath := basePath.Child("controlPlaneOperators")
+		controlPlaneOperators := managedIdentities.ControlPlaneOperators
+
+		if controlPlaneOperators.ControlPlaneManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.ControlPlaneManagedIdentities, controlPlanePath.Child("controlPlaneOperatorsManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.ClusterAPIAzureManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.ClusterAPIAzureManagedIdentities, controlPlanePath.Child("clusterApiAzureManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.CloudControllerManagerManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.CloudControllerManagerManagedIdentities, controlPlanePath.Child("cloudControllerManager")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.IngressManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.IngressManagedIdentities, controlPlanePath.Child("ingressManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.DiskCsiDriverManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.DiskCsiDriverManagedIdentities, controlPlanePath.Child("diskCsiDriverManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.FileCsiDriverManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.FileCsiDriverManagedIdentities, controlPlanePath.Child("fileCsiDriverManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.ImageRegistryManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.ImageRegistryManagedIdentities, controlPlanePath.Child("imageRegistryManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.CloudNetworkConfigManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.CloudNetworkConfigManagedIdentities, controlPlanePath.Child("cloudNetworkConfigManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if controlPlaneOperators.KmsManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.KmsManagedIdentities, controlPlanePath.Child("kmsManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+	}
+
+	// Validate DataPlaneOperators identities
+	if managedIdentities.DataPlaneOperators != nil {
+		dataPlaneOperators := managedIdentities.DataPlaneOperators
+		dataPlanePath := basePath.Child("dataPlaneOperators")
+
+		if dataPlaneOperators.DiskCsiDriverManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(dataPlaneOperators.DiskCsiDriverManagedIdentities, dataPlanePath.Child("diskCsiDriverManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if dataPlaneOperators.FileCsiDriverManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(dataPlaneOperators.FileCsiDriverManagedIdentities, dataPlanePath.Child("fileCsiDriverManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
+		if dataPlaneOperators.ImageRegistryManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(dataPlaneOperators.ImageRegistryManagedIdentities, dataPlanePath.Child("imageRegistryManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+	}
+
+	return allErrs
+}
+
 func setDefaultOCPVersion(version string) string {
 	if strings.HasPrefix(version, "openshift-v") {
 		normalizedVersion := version[11:]
@@ -321,4 +429,20 @@ func setDefaultOCPVersion(version string) string {
 		version = normalizedVersion
 	}
 	return version
+}
+
+// validateUserAssignedIdentity validates a user-assigned identity resource ID.
+func validateUserAssignedIdentity(identityResourceID string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if identityResourceID == "" {
+		return allErrs // Empty is valid (optional field)
+	}
+
+	// Use the same validation pattern as existing azuremachine_validation.go
+	if _, err := azureutil.ParseResourceID(identityResourceID); err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, identityResourceID, "must be a valid Azure resource ID"))
+	}
+
+	return allErrs
 }

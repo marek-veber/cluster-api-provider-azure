@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -29,7 +28,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
-	azureutil "sigs.k8s.io/cluster-api-provider-azure/util/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -79,7 +77,7 @@ func (s *Service) Name() string {
 
 // Reconcile idempotently gets, creates, and updates an HCP OpenShift cluster.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Service.Reconcile")
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "hcpopenshiftclusters.Service.Reconcile")
 	defer done()
 
 	// HcpOpenShiftClustersReadyCondition is set in the VM service.
@@ -95,11 +93,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	hcpOpenShiftClusterSpecs, ok := spec.(*HcpOpenShiftClustersSpec)
 	if !ok {
 		return errors.Errorf("%T is not of type HcpOpenShiftClusterSpecs", spec)
-	}
-
-	err := s.checkUserAssignedIdentities(ctx, log, hcpOpenShiftClusterSpecs)
-	if err != nil {
-		return errors.Wrap(err, "failed to check user assigned identities")
 	}
 
 	result, err := s.Client.Get(ctx, spec)
@@ -250,44 +243,4 @@ func (s *Service) validateSpec(ctx context.Context) error {
 // IsManaged always returns true as CAPZ does not support BYO HCP OpenShift clusters.
 func (s *Service) IsManaged(_ context.Context) (bool, error) {
 	return true, nil
-}
-
-func (s *Service) checkUserAssignedIdentities(ctx context.Context, log logr.Logger, spec *HcpOpenShiftClustersSpec) error {
-	userAssignedIdentities, _ := spec.getManagedIdentities()
-
-	usedIdentities := map[string]bool{}
-	midsMap := []map[string]*string{
-		userAssignedIdentities.ControlPlaneOperators,
-		userAssignedIdentities.DataPlaneOperators,
-		{"": userAssignedIdentities.ServiceManagedIdentity},
-	}
-	for _, midMap := range midsMap {
-		for _, mid := range midMap {
-			if mid == nil || *mid == "" {
-				continue
-			}
-			usedIdentities[*mid] = true
-		}
-	}
-
-	for providerID := range usedIdentities {
-		identitiesClient := s.identitiesGetter
-		parsed, err := azureutil.ParseResourceID(providerID)
-		if err != nil {
-			return err
-		}
-		if parsed.SubscriptionID != s.Scope.SubscriptionID() {
-			identitiesClient, err = identities.NewClientBySub(s.Scope, parsed.SubscriptionID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create identities client from subscription ID %s", parsed.SubscriptionID)
-			}
-		}
-		clientID, err := identitiesClient.GetClientID(ctx, providerID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get client ID for %s", providerID)
-		}
-		log.V(6).Info(fmt.Sprintf("GetClientID(%s) -> %s", providerID, clientID))
-	}
-
-	return nil
 }

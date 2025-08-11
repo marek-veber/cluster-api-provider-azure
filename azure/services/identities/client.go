@@ -32,6 +32,7 @@ import (
 type Client interface {
 	Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error)
 	GetClientID(ctx context.Context, providerID string) (string, error)
+	CreateOrUpdate(ctx context.Context, resourceGroupName, name string, identity armmsi.Identity) (armmsi.Identity, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
@@ -91,4 +92,16 @@ func (ac *AzureClient) GetClientID(ctx context.Context, providerID string) (stri
 		return "", err
 	}
 	return ptr.Deref(ident.Properties.ClientID, ""), nil
+}
+
+// CreateOrUpdate creates or updates a user-assigned identity.
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, identity armmsi.Identity) (armmsi.Identity, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "identities.AzureClient.CreateOrUpdate")
+	defer done()
+
+	resp, err := ac.userAssignedIdentities.CreateOrUpdate(ctx, resourceGroupName, name, identity, nil)
+	if err != nil {
+		return armmsi.Identity{}, err
+	}
+	return resp.Identity, nil
 }

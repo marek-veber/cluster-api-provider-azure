@@ -57,6 +57,21 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// CreateOrUpdate mocks base method.
+func (m *MockClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, identity armmsi.Identity) (armmsi.Identity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdate", ctx, resourceGroupName, name, identity)
+	ret0, _ := ret[0].(armmsi.Identity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrUpdate indicates an expected call of CreateOrUpdate.
+func (mr *MockClientMockRecorder) CreateOrUpdate(ctx, resourceGroupName, name, identity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), ctx, resourceGroupName, name, identity)
+}
+
 // Get mocks base method.
 func (m *MockClient) Get(ctx context.Context, resourceGroupName, name string) (armmsi.Identity, error) {
 	m.ctrl.T.Helper()
