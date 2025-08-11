@@ -61,8 +61,8 @@ func (s *HcpOpenShiftClustersSpec) OwnerResourceName() string {
 	return s.Name
 }
 
-// getManagedIdentities converts managed identities.
-func (s *HcpOpenShiftClustersSpec) getManagedIdentities() (*arohcp.UserAssignedIdentitiesProfile, *arohcp.ManagedServiceIdentity) {
+// GetManagedIdentities converts managed identities.
+func (s *HcpOpenShiftClustersSpec) GetManagedIdentities() (*arohcp.UserAssignedIdentitiesProfile, *arohcp.ManagedServiceIdentity) {
 	managedServiceIdentityType := arohcp.ManagedServiceIdentityTypeUserAssigned
 	userAssignedIdentities := &arohcp.UserAssignedIdentitiesProfile{
 		ControlPlaneOperators: map[string]*string{
@@ -169,7 +169,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 		existingHcpOpenShiftCluster = &hcpOpenShiftCluster
 	}
 
-	userAssignedIdentities, managedServiceIdentity := s.getManagedIdentities()
+	userAssignedIdentities, managedServiceIdentity := s.GetManagedIdentities()
 	outboundType, errO := s.getOutboundType()
 	if errO != nil {
 		return nil, errO
