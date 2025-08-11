@@ -141,7 +141,7 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 			PodCIDR:     "10.128.0.0/14",
 			HostPrefix:  23,
 		},
-		Version:      "4.19.0",
+		Version:      "4.19",
 		ChannelGroup: v1beta2.Stable,
 		Visibility:   "Public",
 	}

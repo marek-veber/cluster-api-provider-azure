@@ -256,7 +256,7 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(_ context.Context) azure
 		Subnet:                 s.ControlPlane.Spec.Platform.Subnet,
 		OutboundType:           s.ControlPlane.Spec.Platform.OutboundType,
 		Network:                s.ControlPlane.Spec.Network,
-		Version:                s.ControlPlane.Spec.Version + ".0", // TODO: temporary fix for the ARO-HCP bug
+		Version:                s.ControlPlane.Spec.Version,
 		ChannelGroup:           s.ControlPlane.Spec.ChannelGroup,
 		Visibility:             s.ControlPlane.Spec.Visibility,
 	}
