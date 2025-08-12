@@ -21,8 +21,6 @@ import (
 	"context"
 	errorsCore "errors"
 	"fmt"
-	"strings"
-
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -192,9 +190,6 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		ControlPlane:    aroControlPlane,
 		Timeouts:        r.Timeouts,
 		CredentialCache: r.CredentialCache,
-		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
-		SubscriptionID:   strings.Split(aroControlPlane.Spec.Platform.Subnet, "/")[2],
-		AzureEnvironment: "",
 	})
 
 	if err != nil {

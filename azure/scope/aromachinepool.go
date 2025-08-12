@@ -49,8 +49,6 @@ type AROMachinePoolScopeParams struct {
 	Timeouts             azure.AsyncReconciler
 	CredentialCache      azure.CredentialCache
 	AROControlPlaneScope *AROControlPlaneScope
-	SubscriptionID       string
-	AzureEnvironment     string
 }
 
 // NewAROMachinePoolScope creates a new Scope from the supplied parameters.
@@ -67,7 +65,7 @@ func NewAROMachinePoolScope(ctx context.Context, params AROMachinePoolScopeParam
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
-	err = params.AzureClients.setCredentialsWithProvider(ctx, params.SubscriptionID, params.AzureEnvironment, credentialsProvider)
+	err = params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}

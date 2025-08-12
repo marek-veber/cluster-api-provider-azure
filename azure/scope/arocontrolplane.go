@@ -56,14 +56,12 @@ const (
 // AROControlPlaneScopeParams defines the input parameters used to create a new Scope.
 type AROControlPlaneScopeParams struct {
 	AzureClients
-	Client           client.Client
-	Cluster          *clusterv1.Cluster
-	ControlPlane     *cplane.AROControlPlane
-	Cache            *AROControlPlaneCache
-	Timeouts         azure.AsyncReconciler
-	CredentialCache  azure.CredentialCache
-	SubscriptionID   string
-	AzureEnvironment string
+	Client          client.Client
+	Cluster         *clusterv1.Cluster
+	ControlPlane    *cplane.AROControlPlane
+	Cache           *AROControlPlaneCache
+	Timeouts        azure.AsyncReconciler
+	CredentialCache azure.CredentialCache
 }
 
 // NewAROControlPlaneScope creates a new Scope from the supplied parameters.
@@ -80,7 +78,7 @@ func NewAROControlPlaneScope(ctx context.Context, params AROControlPlaneScopePar
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init credentials provider")
 	}
-	err = params.AzureClients.setCredentialsWithProvider(ctx, params.SubscriptionID, params.AzureEnvironment, credentialsProvider)
+	err = params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, params.ControlPlane.Spec.AzureEnvironment, credentialsProvider)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
 	}

@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -199,9 +198,6 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Cluster:         ownerCluster,
 		Timeouts:        ampr.Timeouts,
 		CredentialCache: ampr.CredentialCache,
-		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
-		SubscriptionID:   strings.Split(controlPlane.Spec.Platform.Subnet, "/")[2],
-		AzureEnvironment: "",
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create AROControlPlane scope")
@@ -218,9 +214,6 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		AROControlPlaneScope: aroControlPlaneScope,
 		Timeouts:             ampr.Timeouts,
 		CredentialCache:      ampr.CredentialCache,
-		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
-		SubscriptionID:   strings.Split(controlPlane.Spec.Platform.Subnet, "/")[2],
-		AzureEnvironment: "",
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create AROMachinePool scope")

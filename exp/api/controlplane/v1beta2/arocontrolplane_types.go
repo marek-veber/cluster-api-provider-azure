@@ -98,6 +98,30 @@ type AROControlPlaneSpec struct { //nolint: maligned
 	// If no identity is specified, the default identity for this controller will be used.
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 
+	// SubscriptionID is the GUID of the Azure subscription that owns this cluster.
+	// +optional
+	SubscriptionID string `json:"subscriptionID,omitempty"`
+
+	// AzureEnvironment is the name of the AzureCloud to be used.
+	// The default value that would be used by most users is "AzurePublicCloud", other values are:
+	// - ChinaCloud: "AzureChinaCloud"
+	// - PublicCloud: "AzurePublicCloud"
+	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	//
+	// Note that values other than the default must also be accompanied by corresponding changes to the
+	// aso-controller-settings Secret to configure ASO to refer to the non-Public cloud. ASO currently does
+	// not support referring to multiple different clouds in a single installation. The following fields must
+	// be defined in the Secret:
+	// - AZURE_AUTHORITY_HOST
+	// - AZURE_RESOURCE_MANAGER_ENDPOINT
+	// - AZURE_RESOURCE_MANAGER_AUDIENCE
+	//
+	// See the [ASO docs] for more details.
+	//
+	// [ASO docs]: https://azure.github.io/azure-service-operator/guide/aso-controller-settings-options/
+	// +optional
+	AzureEnvironment string `json:"azureEnvironment,omitempty"`
+
 	// AdditionalTags are user-defined tags to be added on the AWS resources associated with the control plane.
 	// +optional
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
