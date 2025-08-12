@@ -44,7 +44,7 @@ type AROClusterStatus struct {
 	// initialization provides observations of the AROCluster initialization process.
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
-	Initialization *AROClusterInitializationStatus `json:"initialization,omitempty"` // TODO: mvwbwe - Mohames's proposal is for v1beta1
+	Initialization *AROClusterInitializationStatus `json:"initialization,omitempty"`
 }
 
 // AROClusterInitializationStatus provides observations of the AROCluster initialization process.

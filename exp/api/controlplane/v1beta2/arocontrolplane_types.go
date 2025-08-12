@@ -171,9 +171,6 @@ type ControlPlaneOperators struct {
 
 	// CloudNetworkConfigManagedIdentities "cloud-network-config" Microsoft.ManagedIdentity/userAssignedIdentities
 	CloudNetworkConfigManagedIdentities string `json:"cloudNetworkConfigManagedIdentities,omitempty"`
-
-	// KmsManagedIdentities "kms" Microsoft.ManagedIdentity/userAssignedIdentities
-	KmsManagedIdentities string `json:"kmsManagedIdentities,omitempty"`
 }
 
 // DataPlaneOperators represents managed identities for the DataPlane.
@@ -219,14 +216,10 @@ type NetworkSpec struct {
 
 // AROControlPlaneStatus defines the observed state of AROControlPlane.
 type AROControlPlaneStatus struct {
-	// ExternalManagedControlPlane indicates to cluster-api that the control plane
-	// is managed by an external service such as AKS, EKS, GKE, etc.
-	// +kubebuilder:default=true
-	ExternalManagedControlPlane *bool `json:"externalManagedControlPlane,omitempty"` // TODO: is in ROSA
 	// initialization provides observations of the AROControlPlane initialization process.
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
-	Initialization *AROControlPlaneInitializationStatus `json:"initialization,omitempty"` // TODO: mveber - Mohamed's proposal is for v1beta1
+	Initialization *AROControlPlaneInitializationStatus `json:"initialization,omitempty"`
 	// Ready denotes that the AROControlPlane API Server is ready to receive requests.
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
@@ -253,13 +246,10 @@ type AROControlPlaneStatus struct {
 	APIURL string `json:"apiURL,omitempty"`
 
 	// ARO-HCP OpenShift semantic version, for example "4.20.0".
-	// TODO: mveber - Mohamed's proposal includes +omitempty
 	Version string `json:"version,omitempty"`
 
 	// Available upgrades for the ARO hosted control plane.
 	AvailableUpgrades []string `json:"availableUpgrades,omitempty"`
-
-	//TODO: mveber - required for features
 
 	// LongRunningOperationStates saves the state for ARO long-running operations so they can be continued on the
 	// next reconciliation loop.

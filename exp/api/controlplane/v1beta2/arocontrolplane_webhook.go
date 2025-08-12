@@ -384,12 +384,6 @@ func (m *AROControlPlane) validateManagedIdentities(_ client.Client) field.Error
 				allErrs = append(allErrs, errs...)
 			}
 		}
-
-		if controlPlaneOperators.KmsManagedIdentities != "" {
-			if errs := validateUserAssignedIdentity(controlPlaneOperators.KmsManagedIdentities, controlPlanePath.Child("kmsManagedIdentities")); len(errs) > 0 {
-				allErrs = append(allErrs, errs...)
-			}
-		}
 	}
 
 	// Validate DataPlaneOperators identities

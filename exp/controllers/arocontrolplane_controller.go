@@ -185,33 +185,6 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		_ = log.WithValues("cluster", cluster.Name)
 	}
 
-	/*//nolint:gocritic // TODO: mveber - machine pools - commented code kept for future reference TODO: mveber - machine pools
-	// Fetch all the ManagedMachinePools owned by this Cluster.
-	opt1 := client.InNamespace(aroControlPlane.Namespace)
-	opt2 := client.MatchingLabels(map[string]string{
-		clusterv1.ClusterNameLabel: cluster.Name,
-	})
-
-	ammpList := &infrav1.AROMachinePoolList{}
-	if err := r.List(ctx, ammpList, opt1, opt2); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	var pools = make([]scope.ManagedMachinePool, len(ammpList.Items))
-
-	for i, ammp := range ammpList.Items {
-		// Fetch the owner MachinePool.
-		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, r.Client, ammp.ObjectMeta)
-		if err != nil || ownerPool == nil {
-			return reconcile.Result{}, errors.Wrapf(err, "failed to fetch owner MachinePool for AROMachinePool: %s", ammp.Name)
-		}
-		pools[i] = scope.ManagedMachinePool{
-			InfraMachinePool: &ammpList.Items[i],
-			MachinePool:      ownerPool,
-		}
-	}
-	*/
-
 	// Create the scope.
 	aroScope, err := scope.NewAROControlPlaneScope(ctx, scope.AROControlPlaneScopeParams{
 		Client:          r.Client,
@@ -219,7 +192,7 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		ControlPlane:    aroControlPlane,
 		Timeouts:        r.Timeouts,
 		CredentialCache: r.CredentialCache,
-		// TODO: mveber - what about this variables:
+		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
 		SubscriptionID:   strings.Split(aroControlPlane.Spec.Platform.Subnet, "/")[2],
 		AzureEnvironment: "",
 	})

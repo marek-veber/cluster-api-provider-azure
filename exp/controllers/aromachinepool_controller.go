@@ -199,7 +199,7 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Cluster:         ownerCluster,
 		Timeouts:        ampr.Timeouts,
 		CredentialCache: ampr.CredentialCache,
-		// TODO: mveber - what about this variables:
+		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
 		SubscriptionID:   strings.Split(controlPlane.Spec.Platform.Subnet, "/")[2],
 		AzureEnvironment: "",
 	})
@@ -218,7 +218,7 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		AROControlPlaneScope: aroControlPlaneScope,
 		Timeouts:             ampr.Timeouts,
 		CredentialCache:      ampr.CredentialCache,
-		// TODO: mveber - what about this variables:
+		// TODO: mveber - is it correct to compute SubscriptionID from the Subnet?
 		SubscriptionID:   strings.Split(controlPlane.Spec.Platform.Subnet, "/")[2],
 		AzureEnvironment: "",
 	})

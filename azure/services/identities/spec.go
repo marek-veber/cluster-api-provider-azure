@@ -83,12 +83,11 @@ func ParseUserAssignedIdentityResourceID(resourceID string) (*UserAssignedIdenti
 		return nil, errors.Wrap(err, "failed to parse resource ID")
 	}
 
-	if parsed.Provider != "Microsoft.ManagedIdentity" {
-		return nil, errors.Errorf("expected provider Microsoft.ManagedIdentity, got %s", parsed.Provider)
-	}
-
-	if parsed.ResourceType.String() != "userAssignedIdentities" {
-		return nil, errors.Errorf("expected resource type userAssignedIdentities, got %s", parsed.ResourceType.String())
+	// The Azure SDK puts the full resource type in ResourceType field as "Microsoft.ManagedIdentity/userAssignedIdentities"
+	// We need to split this to get the provider and resource type separately
+	resourceTypeString := parsed.ResourceType.String()
+	if resourceTypeString != "Microsoft.ManagedIdentity/userAssignedIdentities" {
+		return nil, errors.Errorf("expected resource type Microsoft.ManagedIdentity/userAssignedIdentities, got %s", resourceTypeString)
 	}
 
 	return &UserAssignedIdentitySpec{

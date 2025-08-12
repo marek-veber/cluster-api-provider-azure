@@ -174,7 +174,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	}
 	log.Info(fmt.Sprintf("validateSpec: %s", hcpOpenShiftClusterSpecs.Name))
 
-	/* TODO: mveber - remove
+	/* TODO: mveber - Is required to fetch location and zone to check for their support of ultra disks.
 	// Fetch location and zone to check for their support of ultra disks.
 	zones, err := s.resourceSKUCache.GetZones(ctx, hcpOpenShiftClusterSpecs.Location)
 	if err != nil {

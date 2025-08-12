@@ -45,7 +45,7 @@ type AROMachinePoolSpec struct {
 	//
 	// +kubebuilder:validation:Enum=stable;candidate;nightly
 	// +kubebuilder:default=stable
-	ChannelGroup ChannelGroupType `json:"channelGroup"` // TODO: mveber - added
+	ChannelGroup ChannelGroupType `json:"channelGroup"`
 
 	// AROPlatformProfileMachinePool represents the NodePool Azure platform configuration.
 	Platform AROPlatformProfileMachinePool `json:"platform,omitempty"`
@@ -77,7 +77,7 @@ type AROMachinePoolSpec struct {
 	// providerIDList are the identification IDs of machine instances provided by the provider.
 	// This field must match the provider IDs as seen on the node objects corresponding to a machine pool's machine instances.
 	// +optional
-	ProviderIDList []string `json:"providerIDList,omitempty"` // TODO: mveber - added
+	ProviderIDList []string `json:"providerIDList,omitempty"`
 }
 
 // AROPlatformProfileMachinePool represents the Azure platform configuration.
@@ -166,8 +166,6 @@ type AROMachinePoolStatus struct {
 	// ARO-HCP OpenShift version X.Y (without Z-stream), for example "4.20".
 	Version string `json:"version,omitempty"`
 
-	//TODO: mveber - required for features
-
 	// LongRunningOperationStates saves the state for ARO long-running operations so they can be continued on the
 	// next reconciliation loop.
 	// +optional
@@ -176,7 +174,7 @@ type AROMachinePoolStatus struct {
 	// initialization provides observations of the AROMachinePool initialization process.
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
-	Initialization *AROMachinePoolInitializationStatus `json:"initialization,omitempty"` // TODO: mvwbwe - Mohames's proposal is for v1beta1
+	Initialization *AROMachinePoolInitializationStatus `json:"initialization,omitempty"`
 }
 
 // AROMachinePoolInitializationStatus provides observations of the AROCluster initialization process.

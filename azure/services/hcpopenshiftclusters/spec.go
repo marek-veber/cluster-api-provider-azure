@@ -74,8 +74,6 @@ func (s *HcpOpenShiftClustersSpec) GetManagedIdentities() (*arohcp.UserAssignedI
 			"file-csi-driver":          &s.ManagedIdentities.ControlPlaneOperators.FileCsiDriverManagedIdentities,
 			"image-registry":           &s.ManagedIdentities.ControlPlaneOperators.ImageRegistryManagedIdentities,
 			"cloud-network-config":     &s.ManagedIdentities.ControlPlaneOperators.CloudNetworkConfigManagedIdentities,
-			// TODO: mveber - update Mohamed's proposal - KMS should be removed
-			// "kms":                      &s.ManagedIdentities.ControlPlaneOperators.KmsManagedIdentities,
 		},
 		DataPlaneOperators: map[string]*string{
 			"disk-csi-driver": &s.ManagedIdentities.DataPlaneOperators.DiskCsiDriverManagedIdentities,
@@ -92,7 +90,7 @@ func (s *HcpOpenShiftClustersSpec) GetManagedIdentities() (*arohcp.UserAssignedI
 	}
 	midsMap := []map[string]*string{
 		userAssignedIdentities.ControlPlaneOperators,
-		// TODO: mveber - why can't this be here: userAssignedIdentities.DataPlaneOperators,
+		// userAssignedIdentities.DataPlaneOperators, // we should skip DataPlaneOperators here
 		{"": userAssignedIdentities.ServiceManagedIdentity},
 	}
 	for _, midMap := range midsMap {

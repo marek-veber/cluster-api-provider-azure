@@ -49,9 +49,8 @@ type AROMachinePoolScopeParams struct {
 	Timeouts             azure.AsyncReconciler
 	CredentialCache      azure.CredentialCache
 	AROControlPlaneScope *AROControlPlaneScope
-	// TODO: mveber - populate these fields
-	SubscriptionID   string
-	AzureEnvironment string
+	SubscriptionID       string
+	AzureEnvironment     string
 }
 
 // NewAROMachinePoolScope creates a new Scope from the supplied parameters.
@@ -60,12 +59,6 @@ func NewAROMachinePoolScope(ctx context.Context, params AROMachinePoolScopeParam
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.aroMachinePoolScope.NewAROMachinePoolScope")
 	defer done()
 
-	/*
-		TODO: mveber - how to handle pause/delete when Cluster == nil
-		if params.Cluster == nil {
-			return nil, errors.New("failed to generate new scope from nil Cluster")
-		}
-	*/
 	if params.AROMachinePool == nil {
 		return nil, errors.New("failed to generate new scope from nil AROMachinePool")
 	}

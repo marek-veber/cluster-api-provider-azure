@@ -112,8 +112,6 @@ func (s *aroMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.aroMachinePoolService.Reconcile")
 	defer done()
 
-	// s.scope.SetSubnetName() TODO: mveber - why
-
 	log.Info("reconciling ARO machine pool")
 
 	if s.scope.InfraMachinePool.Spec.Autoscaling != nil && !annotations.ReplicasManagedByExternalAutoscaler(s.scope.MachinePool) {

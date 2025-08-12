@@ -56,13 +56,12 @@ const (
 // AROControlPlaneScopeParams defines the input parameters used to create a new Scope.
 type AROControlPlaneScopeParams struct {
 	AzureClients
-	Client          client.Client
-	Cluster         *clusterv1.Cluster
-	ControlPlane    *cplane.AROControlPlane
-	Cache           *AROControlPlaneCache
-	Timeouts        azure.AsyncReconciler
-	CredentialCache azure.CredentialCache
-	// TODO: mveber - fill this
+	Client           client.Client
+	Cluster          *clusterv1.Cluster
+	ControlPlane     *cplane.AROControlPlane
+	Cache            *AROControlPlaneCache
+	Timeouts         azure.AsyncReconciler
+	CredentialCache  azure.CredentialCache
 	SubscriptionID   string
 	AzureEnvironment string
 }
@@ -73,12 +72,6 @@ func NewAROControlPlaneScope(ctx context.Context, params AROControlPlaneScopePar
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.aroControlPlaneScope.NewAROControlPlaneScope")
 	defer done()
 
-	/*
-		TODO: mveber - how to pause/delete if Cluster == nil
-		if params.Cluster == nil {
-			return nil, errors.New("failed to generate new scope from nil Cluster")
-		}
-	*/
 	if params.ControlPlane == nil {
 		return nil, errors.New("failed to generate new scope from nil AROControlPlane")
 	}

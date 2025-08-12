@@ -210,9 +210,6 @@ spec:
                           ingressManagedIdentities:
                             description: IngressManagedIdentities "ingress" Microsoft.ManagedIdentity/userAssignedIdentities
                             type: string
-                          kmsManagedIdentities:
-                            description: KmsManagedIdentities "kms" Microsoft.ManagedIdentity/userAssignedIdentities
-                            type: string
                         type: object
                       createAROHCPManagedIdentities:
                         description: |-
@@ -358,12 +355,6 @@ spec:
               consoleURL:
                 description: ConsoleURL is the url for the openshift console.
                 type: string
-              externalManagedControlPlane:
-                default: true
-                description: |-
-                  ExternalManagedControlPlane indicates to cluster-api that the control plane
-                  is managed by an external service such as AKS, EKS, GKE, etc.
-                type: boolean
               failureMessage:
                 description: |-
                   FailureMessage will be set in the event that there is a terminal problem
