@@ -37,8 +37,10 @@ type HcpOpenShiftClustersSpec struct {
 	NodeResourceGroup      string
 	ManagedIdentities      *cplane.ManagedIdentities
 	AdditionalTags         map[string]string
+	SubscriptionID         string
 	NetworkSecurityGroupID string
-	Subnet                 string
+	SubnetID               string
+	VNetID                 string
 	OutboundType           string
 	Network                *cplane.NetworkSpec
 	Version                string
@@ -192,7 +194,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 				OperatorsAuthentication: &arohcp.OperatorsAuthenticationProfile{
 					UserAssignedIdentities: userAssignedIdentities,
 				},
-				SubnetID:             &s.Subnet,
+				SubnetID:             &s.SubnetID,
 				ManagedResourceGroup: s.getManagedResourceGroup(),
 				OutboundType:         outboundType,
 				// IssuerURL:            nil,

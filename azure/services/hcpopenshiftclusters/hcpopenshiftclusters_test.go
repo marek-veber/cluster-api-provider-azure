@@ -70,7 +70,9 @@ var (
 			"test-key": "test-value",
 		},
 		NetworkSecurityGroupID: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
-		Subnet:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		SubscriptionID:         "test",
+		SubnetID:               "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		VNetID:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
 		OutboundType:           "LoadBalancer",
 		Network: &cplane.NetworkSpec{
 			NetworkType: "OVNKubernetes",

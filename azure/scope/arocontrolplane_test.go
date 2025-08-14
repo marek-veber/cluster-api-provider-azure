@@ -41,10 +41,6 @@ import (
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 )
 
-const (
-	fakeAzureEnvironment = "AzurePublicCloud"
-)
-
 // fakeTokenCredential implements azcore.TokenCredential for testing
 type fakeTokenCredential struct {
 	tenantID string
@@ -72,13 +68,11 @@ func TestNewAROControlPlaneScope(t *testing.T) {
 			expectError: true,
 			setup: func(mockCtrl *gomock.Controller) AROControlPlaneScopeParams {
 				return AROControlPlaneScopeParams{
-					AzureClients:     AzureClients{},
-					Client:           fake.NewClientBuilder().WithScheme(scheme).Build(),
-					Cluster:          &clusterv1.Cluster{},
-					ControlPlane:     nil,
-					CredentialCache:  azure.NewCredentialCache(),
-					SubscriptionID:   "12345678-1234-1234-1234-123456789012",
-					AzureEnvironment: fakeAzureEnvironment,
+					AzureClients:    AzureClients{},
+					Client:          fake.NewClientBuilder().WithScheme(scheme).Build(),
+					Cluster:         &clusterv1.Cluster{},
+					ControlPlane:    nil,
+					CredentialCache: azure.NewCredentialCache(),
 				}
 			},
 		},
@@ -102,6 +96,8 @@ func TestNewAROControlPlaneScope(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: cplane.AROControlPlaneSpec{
+						SubscriptionID:   "12345678-1234-1234-1234-123456789012",
+						AzureEnvironment: "AzurePublicCloud",
 						Platform: cplane.AROPlatformProfileControlPlane{
 							Location:               "eastus",
 							ResourceGroup:          "test-rg",
@@ -132,13 +128,11 @@ func TestNewAROControlPlaneScope(t *testing.T) {
 				fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(cluster, controlPlane, fakeIdentity).Build()
 
 				return AROControlPlaneScopeParams{
-					AzureClients:     AzureClients{},
-					Client:           fakeClient,
-					Cluster:          cluster,
-					ControlPlane:     controlPlane,
-					CredentialCache:  credCacheMock,
-					SubscriptionID:   "12345678-1234-1234-1234-123456789012",
-					AzureEnvironment: fakeAzureEnvironment,
+					AzureClients:    AzureClients{},
+					Client:          fakeClient,
+					Cluster:         cluster,
+					ControlPlane:    controlPlane,
+					CredentialCache: credCacheMock,
 				}
 			},
 		},

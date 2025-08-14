@@ -97,6 +97,8 @@ func createTestScopeWithOptions(t *testing.T, kubeconfigData *string, createKube
 			Namespace: "default",
 		},
 		Spec: cplane.AROControlPlaneSpec{
+			SubscriptionID:   "12345678-1234-1234-1234-123456789012",
+			AzureEnvironment: "AzurePublicCloud",
 			Platform: cplane.AROPlatformProfileControlPlane{
 				Location:               "eastus",
 				ResourceGroup:          "test-rg",
@@ -162,14 +164,12 @@ func createTestScopeWithOptions(t *testing.T, kubeconfigData *string, createKube
 	}
 
 	scopeParams := scope.AROControlPlaneScopeParams{
-		AzureClients:     scope.AzureClients{}, // Empty but not nil
-		Client:           fakeClient,
-		Cluster:          cluster,
-		ControlPlane:     controlPlane,
-		CredentialCache:  credCacheMock,
-		Timeouts:         timeouts,
-		SubscriptionID:   "12345678-1234-1234-1234-123456789012",
-		AzureEnvironment: "AzurePublicCloud",
+		AzureClients:    scope.AzureClients{}, // Empty but not nil
+		Client:          fakeClient,
+		Cluster:         cluster,
+		ControlPlane:    controlPlane,
+		CredentialCache: credCacheMock,
+		Timeouts:        timeouts,
 	}
 
 	aroScope, err := scope.NewAROControlPlaneScope(context.TODO(), scopeParams)
@@ -193,7 +193,7 @@ func TestNewAROControlPlaneService(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(service).NotTo(BeNil())
 	g.Expect(service.scope).To(Equal(aroScope))
-	g.Expect(service.services).To(HaveLen(7)) // groups, virtualnetworks, securitygroups, subnets, hcpopenshiftidentities, hcpopenshiftclusters, hcpopenshiftclustercredentials
+	g.Expect(service.services).To(HaveLen(8)) // groups, virtualnetworks, securitygroups, subnets, hcpopenshiftidentities, roleassignments, hcpopenshiftclusters, hcpopenshiftclustercredentials
 	g.Expect(service.skuCache).NotTo(BeNil())
 	g.Expect(service.Reconcile).NotTo(BeNil())
 	g.Expect(service.Pause).NotTo(BeNil())

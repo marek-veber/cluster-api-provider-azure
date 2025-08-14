@@ -135,7 +135,9 @@ func createControlPlane(name, namespace string, deletionTimestamp *metav1.Time, 
 			Finalizers:        finalizers,
 		},
 		Spec: cplane.AROControlPlaneSpec{
-			AroClusterName: "test-aro-cluster",
+			AroClusterName:   "test-aro-cluster",
+			SubscriptionID:   "12345678-1234-1234-1234-123456789012",
+			AzureEnvironment: "AzurePublicCloud",
 			Platform: cplane.AROPlatformProfileControlPlane{
 				Location:               "eastus",
 				ResourceGroup:          "test-rg",
@@ -351,6 +353,8 @@ func TestAROControlPlaneReconciler_Reconcile(t *testing.T) {
 				},
 				Spec: cplane.AROControlPlaneSpec{
 					// AroClusterName intentionally omitted to trigger error
+					SubscriptionID:   testSubscriptionID,
+					AzureEnvironment: "AzurePublicCloud",
 					Platform: cplane.AROPlatformProfileControlPlane{
 						Location:      "eastus",
 						ResourceGroup: "test-rg",
@@ -615,7 +619,9 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 					Finalizers:        []string{cplane.AROControlPlaneFinalizer},
 				},
 				Spec: cplane.AROControlPlaneSpec{
-					AroClusterName: "test-aro-cluster",
+					AroClusterName:   "test-aro-cluster",
+					SubscriptionID:   testSubscriptionID,
+					AzureEnvironment: "AzurePublicCloud",
 					Platform: cplane.AROPlatformProfileControlPlane{
 						Subnet: "/subscriptions/" + testSubscriptionID + "/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 					},
@@ -649,7 +655,9 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 					Finalizers:        []string{cplane.AROControlPlaneFinalizer},
 				},
 				Spec: cplane.AROControlPlaneSpec{
-					AroClusterName: "test-aro-cluster",
+					AroClusterName:   "test-aro-cluster",
+					SubscriptionID:   testSubscriptionID,
+					AzureEnvironment: "AzurePublicCloud",
 					Platform: cplane.AROPlatformProfileControlPlane{
 						Subnet: "/subscriptions/" + testSubscriptionID + "/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 					},
@@ -683,7 +691,9 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 					Finalizers:        []string{cplane.AROControlPlaneFinalizer},
 				},
 				Spec: cplane.AROControlPlaneSpec{
-					AroClusterName: "test-aro-cluster",
+					AroClusterName:   "test-aro-cluster",
+					SubscriptionID:   testSubscriptionID,
+					AzureEnvironment: "AzurePublicCloud",
 					Platform: cplane.AROPlatformProfileControlPlane{
 						Subnet: "/subscriptions/" + testSubscriptionID + "/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 					},
@@ -751,11 +761,9 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 			// Create scope for testing delete
 			scopeParams := scope.AROControlPlaneScopeParams{
-				Client:           fakeClient,
-				ControlPlane:     tc.aroControlPlane,
-				CredentialCache:  credCacheMock,
-				SubscriptionID:   testSubscriptionID,
-				AzureEnvironment: testAzureEnvironment,
+				Client:          fakeClient,
+				ControlPlane:    tc.aroControlPlane,
+				CredentialCache: credCacheMock,
 			}
 
 			aroScope, err := scope.NewAROControlPlaneScope(context.TODO(), scopeParams)

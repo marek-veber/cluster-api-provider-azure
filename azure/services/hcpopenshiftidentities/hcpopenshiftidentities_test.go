@@ -20,82 +20,75 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
+	"github.com/onsi/gomega"
 
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities/mock_identities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 )
 
 func TestNew(t *testing.T) {
 	testCases := []struct {
-		name        string
-		scope       HcpOpenShiftIdentityScope
-		expectError bool
+		name           string
+		scope          HcpOpenShiftIdentityScope
+		identityGetter identities.Client
+		expectError    bool
 	}{
 		{
-			name:        "nil scope",
-			scope:       nil,
-			expectError: true,
+			name:           "nil scope",
+			scope:          nil,
+			identityGetter: nil,
+			expectError:    true,
 		},
 		{
-			name:        "nil identity getter",
-			scope:       nil, // Will test with nil identityGetter
-			expectError: true,
+			name:           "nil identity getter",
+			scope:          nil,
+			identityGetter: nil,
+			expectError:    true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
+			g := gomega.NewWithT(t)
 
-			var identityGetter *mock_identities.MockClient
-			if tc.name == "nil identity getter" {
-				identityGetter = nil
-			} else {
-				identityGetter = mock_identities.NewMockClient(mockCtrl)
-			}
-
-			service, err := New(tc.scope, identityGetter)
+			service, err := New(tc.scope, tc.identityGetter)
 
 			if tc.expectError {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(service).To(BeNil())
+				g.Expect(err).To(gomega.HaveOccurred())
+				g.Expect(service).To(gomega.BeNil())
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(service).NotTo(BeNil())
-				g.Expect(service.Name()).To(Equal("hcpopenshiftidentities"))
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(service).NotTo(gomega.BeNil())
+				g.Expect(service.Name()).To(gomega.Equal("hcpopenshiftidentities"))
 			}
 		})
 	}
 }
 
 func TestService_Delete(t *testing.T) {
-	g := NewWithT(t)
+	g := gomega.NewWithT(t)
 
 	service := &Service{}
 	err := service.Delete(context.TODO())
 
 	// Delete should always succeed and be a no-op
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(err).NotTo(gomega.HaveOccurred())
 }
 
 func TestService_IsManaged(t *testing.T) {
-	g := NewWithT(t)
+	g := gomega.NewWithT(t)
 
 	service := &Service{}
 	managed, err := service.IsManaged(context.TODO())
 
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(managed).To(BeTrue())
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	g.Expect(managed).To(gomega.BeTrue())
 }
 
 func TestService_Name(t *testing.T) {
-	g := NewWithT(t)
+	g := gomega.NewWithT(t)
 
 	service := &Service{}
 	name := service.Name()
 
-	g.Expect(name).To(Equal("hcpopenshiftidentities"))
+	g.Expect(name).To(gomega.Equal("hcpopenshiftidentities"))
 }

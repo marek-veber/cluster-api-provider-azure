@@ -85,6 +85,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to ensure managed identities")
 	}
 
+	// Role assignments are now validated separately by the ARO control plane scope
+
 	s.Scope.UpdatePutStatus(infrav1.BootstrapSucceededCondition, serviceName, nil)
 	return nil
 }

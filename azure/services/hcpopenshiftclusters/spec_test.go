@@ -131,8 +131,10 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 		AdditionalTags: map[string]string{
 			"test-key": "test-value",
 		},
+		SubscriptionID:         "test",
 		NetworkSecurityGroupID: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
-		Subnet:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		SubnetID:               "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+		VNetID:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
 		OutboundType:           "LoadBalancer",
 		Network: &cplane.NetworkSpec{
 			NetworkType: "OVNKubernetes",
