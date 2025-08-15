@@ -25,10 +25,12 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -44,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclustercredentials"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvault"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
@@ -71,6 +74,7 @@ const (
 	roleDEFnetworkOperator           = roleDEF("be7a6435-15ae-4171-8f30-4a343eff9e8f")
 	roleDEFfederatedCredentials      = roleDEF("ef318e2a-8334-4a05-9e4a-295a196c6a6e")
 	roleDEFhcpServiceManagedIdentity = roleDEF("c0ff367d-66d8-445e-917c-583feb0ef0d4")
+	roleDEFkeyVaultCryptoUserRoleID  = roleDEF("12338af0-0e69-4776-bea7-57ae8d297424")
 )
 
 // AROControlPlaneScopeParams defines the input parameters used to create a new Scope.
@@ -141,6 +145,12 @@ type AROControlPlaneScope struct {
 
 	Kubeconfig                   *string
 	KubeonfigExpirationTimestamp *time.Time
+
+	// Key Vault related fields
+	VaultName       *string
+	VaultKeyName    *string
+	VaultKeyVersion *string
+
 	azure.AsyncReconciler
 }
 
@@ -266,6 +276,10 @@ func (s *AROControlPlaneScope) HcpOpenShiftClusterSpecs(_ context.Context) azure
 		NetworkSecurityGroupID: s.ControlPlane.Spec.Platform.NetworkSecurityGroupID,
 		SubscriptionID:         s.ControlPlane.Spec.SubscriptionID,
 		SubnetID:               s.ControlPlane.Spec.Platform.Subnet,
+		VaultID:                s.ControlPlane.Spec.Platform.KeyVault,
+		VaultName:              s.VaultName,
+		VaultKeyName:           s.VaultKeyName,
+		VaultKeyVersion:        s.VaultKeyVersion,
 		VNetID:                 regexp.MustCompile("/subnets/.*").ReplaceAllLiteralString(s.ControlPlane.Spec.Platform.Subnet, ""),
 		OutboundType:           s.ControlPlane.Spec.Platform.OutboundType,
 		Network:                s.ControlPlane.Spec.Network,
@@ -624,7 +638,10 @@ func (s *AROControlPlaneScope) IsVnetManaged() bool {
 	vnet.SetNamespace(s.ASOOwner().GetNamespace())
 	err := s.Client.Get(ctx, client.ObjectKeyFromObject(vnet), vnet)
 	if err != nil {
-		log.Error(err, "Unable to determine if ManagedControlPlaneScope VNET is managed by capz, assuming unmanaged", "AzureManagedCluster", s.ClusterName())
+		if apierrors.IsNotFound(err) {
+			return true
+		}
+		log.Error(err, "Unable to determine if AROControlPlaneScope VNET is managed by capz, assuming unmanaged", "AROCluster", s.ClusterName())
 		return false
 	}
 
@@ -689,11 +706,15 @@ func (s *AROControlPlaneScope) initNetworkSpec() {
 			ResourceGroup: s.ControlPlane.Spec.Platform.ResourceGroup,
 			ID:            s.vnetID(),
 			Name:          s.vnetName(),
+			VnetClassSpec: infrav1.VnetClassSpec{
+				CIDRBlocks: []string{"10.100.0.0/15"}, // TODO: mveber - add default value
+			},
 		},
 		Subnets: infrav1.Subnets{
 			infrav1.SubnetSpec{
 				SubnetClassSpec: infrav1.SubnetClassSpec{
-					Name: s.subnetName(),
+					Name:       s.subnetName(),
+					CIDRBlocks: []string{"10.100.76.0/24"}, // TODO: mveber - add default value
 				},
 				ID: s.ControlPlane.Spec.Platform.Subnet,
 				SecurityGroup: infrav1.SecurityGroup{
@@ -852,6 +873,10 @@ func (s *AROControlPlaneScope) addRoleAssignmentSpecs(spec *hcpopenshiftclusters
 	createSpec(spec.ManagedIdentities.ControlPlaneOperators.CloudNetworkConfigManagedIdentities, roleDEFnetworkOperator, spec.VNetID, "networkconfig-vnet")
 	// Service managed identity has Reader role on Cloud Network Config managed identity
 	createSpec(spec.ManagedIdentities.ServiceManagedIdentity, roleDEFreader, spec.ManagedIdentities.ControlPlaneOperators.CloudNetworkConfigManagedIdentities, "service-reader-networkconfig")
+	// Service managed identity has Reader role on KMS managed identity
+	createSpec(spec.ManagedIdentities.ServiceManagedIdentity, roleDEFreader, spec.ManagedIdentities.ControlPlaneOperators.KmsManagedIdentities, "service-reader-kms")
+	// KMS managed identity has Key Vault Crypto Service Encryption User role on KeyVault
+	createSpec(spec.ManagedIdentities.ControlPlaneOperators.KmsManagedIdentities, roleDEFkeyVaultCryptoUserRoleID, spec.VaultID, "kms-keyvault")
 	// Service managed identity has Federated Credentials role on Data Plane Disk CSI Driver managed identity
 	createSpec(spec.ManagedIdentities.ServiceManagedIdentity, roleDEFfederatedCredentials, spec.ManagedIdentities.DataPlaneOperators.DiskCsiDriverManagedIdentities, "service-fedcreds-dp-diskcsi")
 	// Service managed identity has Federated Credentials role on Data Plane File CSI Driver managed identity
@@ -912,4 +937,53 @@ func (s *AROControlPlaneScope) extractPrincipalIDFromResourceID(resourceID strin
 	}
 
 	return ""
+}
+
+// KeyVaultSpecs returns the Key Vault specs.
+func (s *AROControlPlaneScope) KeyVaultSpecs() []azure.ResourceSpecGetter {
+	if s.ControlPlane.Spec.Platform.KeyVault == "" {
+		return []azure.ResourceSpecGetter{}
+	}
+
+	// Extract vault name from the Key Vault resource ID
+	vaultName, err := extractVaultNameFromResourceID(s.ControlPlane.Spec.Platform.KeyVault)
+	if err != nil {
+		// Return empty specs if we can't extract the vault name
+		return []azure.ResourceSpecGetter{}
+	}
+
+	return []azure.ResourceSpecGetter{
+		&keyvault.KeyVaultSpec{
+			Name:           vaultName,
+			ResourceGroup:  s.ResourceGroup(),
+			Location:       s.Location(),
+			TenantID:       s.TenantID(),
+			SKU:            armkeyvault.SKUNameStandard,
+			AccessPolicies: []*armkeyvault.AccessPolicyEntry{},
+			Tags:           nil, // TODO: Convert infrav1.Tags to map[string]*string
+		},
+	}
+}
+
+// extractVaultNameFromResourceID extracts the vault name from a Key Vault resource ID.
+func extractVaultNameFromResourceID(resourceID string) (string, error) {
+	parts := strings.Split(resourceID, "/")
+	for i, part := range parts {
+		if part == keyvault.VaultsResourceType && i+1 < len(parts) {
+			return parts[i+1], nil
+		}
+	}
+	return "", fmt.Errorf("could not extract vault name from resource ID: %s", resourceID)
+}
+
+// GetKeyVaultResourceID returns the Key Vault resource ID from the platform spec.
+func (s *AROControlPlaneScope) GetKeyVaultResourceID() string {
+	return s.ControlPlane.Spec.Platform.KeyVault
+}
+
+// SetVaultInfo sets the vault information in the scope.
+func (s *AROControlPlaneScope) SetVaultInfo(vaultName, keyName, keyVersion *string) {
+	s.VaultName = vaultName
+	s.VaultKeyName = keyName
+	s.VaultKeyVersion = keyVersion
 }

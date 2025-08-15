@@ -193,7 +193,7 @@ func TestNewAROControlPlaneService(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(service).NotTo(BeNil())
 	g.Expect(service.scope).To(Equal(aroScope))
-	g.Expect(service.services).To(HaveLen(8)) // groups, virtualnetworks, securitygroups, subnets, hcpopenshiftidentities, roleassignments, hcpopenshiftclusters, hcpopenshiftclustercredentials
+	g.Expect(service.services).To(HaveLen(9)) // groups, virtualnetworks, securitygroups, subnets, hcpopenshiftidentities, roleassignments, keyvault, hcpopenshiftclusters, hcpopenshiftclustercredentials
 	g.Expect(service.skuCache).NotTo(BeNil())
 	g.Expect(service.Reconcile).NotTo(BeNil())
 	g.Expect(service.Pause).NotTo(BeNil())

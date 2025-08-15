@@ -190,3 +190,221 @@ func TestValidateUserAssignedIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAzureResourceID(t *testing.T) {
+	tests := []struct {
+		name            string
+		resourceID      string
+		resourceType    string
+		expectedError   bool
+		expectedMessage string
+	}{
+		{
+			name:          "empty resource ID should pass",
+			resourceID:    "",
+			resourceType:  "KeyVault",
+			expectedError: false,
+		},
+		{
+			name:          "valid KeyVault resource ID should pass",
+			resourceID:    "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+			resourceType:  "KeyVault",
+			expectedError: false,
+		},
+		{
+			name:          "valid subnet resource ID should pass",
+			resourceID:    "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+			resourceType:  "subnet",
+			expectedError: false,
+		},
+		{
+			name:            "malformed resource ID should fail",
+			resourceID:      "not-a-resource-id",
+			resourceType:    "KeyVault",
+			expectedError:   true,
+			expectedMessage: "must be a valid Azure KeyVault resource ID",
+		},
+		{
+			name:            "invalid resource ID format should fail",
+			resourceID:      "/invalid/resource/id/format",
+			resourceType:    "subnet",
+			expectedError:   true,
+			expectedMessage: "must be a valid Azure subnet resource ID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			// Call the validation function
+			errs := validateAzureResourceID(tt.resourceID, field.NewPath("test"), tt.resourceType)
+
+			if tt.expectedError {
+				g.Expect(errs).ToNot(BeEmpty(), "Expected validation error but got none")
+				g.Expect(errs[0].Detail).To(ContainSubstring(tt.expectedMessage), "Expected error message to contain '%s', got '%s'", tt.expectedMessage, errs[0].Detail)
+			} else {
+				g.Expect(errs).To(BeEmpty(), "Expected no validation errors, got: %v", errs)
+			}
+		})
+	}
+}
+
+func TestValidateSubscriptionID(t *testing.T) {
+	tests := []struct {
+		name            string
+		subscriptionID  string
+		expectedError   bool
+		expectedMessage string
+	}{
+		{
+			name:           "empty subscription ID should pass",
+			subscriptionID: "",
+			expectedError:  false,
+		},
+		{
+			name:           "valid GUID should pass",
+			subscriptionID: "12345678-1234-1234-1234-123456789012",
+			expectedError:  false,
+		},
+		{
+			name:            "invalid GUID format should fail",
+			subscriptionID:  "not-a-guid",
+			expectedError:   true,
+			expectedMessage: "must be a valid GUID",
+		},
+		{
+			name:            "malformed GUID should fail",
+			subscriptionID:  "12345678-1234-1234-1234-12345678901",
+			expectedError:   true,
+			expectedMessage: "must be a valid GUID",
+		},
+		{
+			name:            "GUID with wrong format should fail",
+			subscriptionID:  "12345678-1234-1234-1234",
+			expectedError:   true,
+			expectedMessage: "must be a valid GUID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			// Call the validation function
+			errs := validateSubscriptionID(tt.subscriptionID, field.NewPath("test"))
+
+			if tt.expectedError {
+				g.Expect(errs).ToNot(BeEmpty(), "Expected validation error but got none")
+				g.Expect(errs[0].Detail).To(ContainSubstring(tt.expectedMessage), "Expected error message to contain '%s', got '%s'", tt.expectedMessage, errs[0].Detail)
+			} else {
+				g.Expect(errs).To(BeEmpty(), "Expected no validation errors, got: %v", errs)
+			}
+		})
+	}
+}
+
+func TestValidatePlatformFields(t *testing.T) {
+	tests := []struct {
+		name                string
+		aroControlPlane     *AROControlPlane
+		expectedErrors      int
+		expectedErrorFields []string
+	}{
+		{
+			name: "valid platform fields should pass",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					SubscriptionID: "12345678-1234-1234-1234-123456789012",
+					Platform: AROPlatformProfileControlPlane{
+						KeyVault: "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+						Subnet:   "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "empty platform fields should pass",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "invalid subscription ID should fail",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					SubscriptionID: "not-a-guid",
+				},
+			},
+			expectedErrors:      1,
+			expectedErrorFields: []string{"spec.subscriptionID"},
+		},
+		{
+			name: "invalid KeyVault resource ID should fail",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{
+						KeyVault: "invalid-resource-id",
+					},
+				},
+			},
+			expectedErrors:      1,
+			expectedErrorFields: []string{"spec.platform.keyvault"},
+		},
+		{
+			name: "invalid subnet resource ID should fail",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{
+						Subnet: "invalid-subnet-id",
+					},
+				},
+			},
+			expectedErrors:      1,
+			expectedErrorFields: []string{"spec.platform.subnet"},
+		},
+		{
+			name: "multiple invalid fields should fail",
+			aroControlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					SubscriptionID: "not-a-guid",
+					Platform: AROPlatformProfileControlPlane{
+						KeyVault: "invalid-kv-id",
+						Subnet:   "invalid-subnet-id",
+					},
+				},
+			},
+			expectedErrors: 3,
+			expectedErrorFields: []string{
+				"spec.subscriptionID",
+				"spec.platform.keyvault",
+				"spec.platform.subnet",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			// Call the validation function
+			errs := tt.aroControlPlane.validatePlatformFields(nil)
+
+			// Check the number of errors
+			g.Expect(errs).To(HaveLen(tt.expectedErrors), "Expected %d errors, got %d: %v", tt.expectedErrors, len(errs), errs)
+
+			// Check specific error fields if expected
+			if len(tt.expectedErrorFields) > 0 {
+				actualFields := make([]string, len(errs))
+				for i, err := range errs {
+					actualFields[i] = err.Field
+				}
+				for _, expectedField := range tt.expectedErrorFields {
+					g.Expect(actualFields).To(ContainElement(expectedField), "Expected error field %s not found in %v", expectedField, actualFields)
+				}
+			}
+		})
+	}
+}

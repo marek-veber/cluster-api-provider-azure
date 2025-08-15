@@ -282,7 +282,7 @@ func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
 				ResourceGroup:          "test-rg",
 				Location:               "eastus",
 				NetworkSecurityGroupID: "test-nsg",
-				Subnet:                 "test-subnet",
+				Subnet:                 "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 				OutboundType:           "Loadbalancer",
 			},
 			Visibility: "Public",

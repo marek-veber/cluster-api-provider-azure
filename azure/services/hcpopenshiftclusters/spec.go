@@ -41,6 +41,10 @@ type HcpOpenShiftClustersSpec struct {
 	NetworkSecurityGroupID string
 	SubnetID               string
 	VNetID                 string
+	VaultID                string
+	VaultName              *string
+	VaultKeyName           *string
+	VaultKeyVersion        *string
 	OutboundType           string
 	Network                *cplane.NetworkSpec
 	Version                string
@@ -76,6 +80,7 @@ func (s *HcpOpenShiftClustersSpec) GetManagedIdentities() (*arohcp.UserAssignedI
 			"file-csi-driver":          &s.ManagedIdentities.ControlPlaneOperators.FileCsiDriverManagedIdentities,
 			"image-registry":           &s.ManagedIdentities.ControlPlaneOperators.ImageRegistryManagedIdentities,
 			"cloud-network-config":     &s.ManagedIdentities.ControlPlaneOperators.CloudNetworkConfigManagedIdentities,
+			"kms":                      &s.ManagedIdentities.ControlPlaneOperators.KmsManagedIdentities,
 		},
 		DataPlaneOperators: map[string]*string{
 			"disk-csi-driver": &s.ManagedIdentities.DataPlaneOperators.DiskCsiDriverManagedIdentities,
@@ -208,7 +213,22 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 				// BaseDomainPrefix: nil,
 				// BaseDomain:       nil,
 			},
-			// Etcd: nil,
+			// azure.etcd_encryption.data_encryption.customer_managed
+			Etcd: &arohcp.EtcdProfile{
+				DataEncryption: &arohcp.EtcdDataEncryptionProfile{
+					KeyManagementMode: ptr.To(arohcp.EtcdDataEncryptionKeyManagementModeTypeCustomerManaged),
+					CustomerManaged: &arohcp.CustomerManagedEncryptionProfile{
+						EncryptionType: ptr.To(arohcp.CustomerManagedEncryptionTypeKms),
+						Kms: &arohcp.KmsEncryptionProfile{
+							ActiveKey: &arohcp.KmsKey{
+								VaultName: s.VaultName,
+								Name:      s.VaultKeyName,
+								Version:   s.VaultKeyVersion,
+							},
+						},
+					},
+				},
+			},
 			Network: &arohcp.NetworkProfile{
 				NetworkType: networkType,
 				HostPrefix:  ptr.To(int32(s.Network.HostPrefix)),

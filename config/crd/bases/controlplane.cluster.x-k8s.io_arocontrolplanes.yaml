@@ -189,6 +189,9 @@ spec:
                 description: AROPlatformProfileControlPlane represents the Azure platform
                   configuration.
                 properties:
+                  keyvault:
+                    description: Azure KeyVault id
+                    type: string
                   location:
                     description: Location should be valid Azure location ex; centralus
                     type: string
@@ -229,6 +232,9 @@ spec:
                             type: string
                           ingressManagedIdentities:
                             description: IngressManagedIdentities "ingress" Microsoft.ManagedIdentity/userAssignedIdentities
+                            type: string
+                          kmsManagedIdentities:
+                            description: KmsManagedIdentities "kms" Microsoft.ManagedIdentity/userAssignedIdentities
                             type: string
                         type: object
                       createAROHCPManagedIdentities:

@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftidentities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvault"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
@@ -78,6 +79,10 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 	if err != nil {
 		return nil, err
 	}
+	keyVaultSvc, err := keyvault.New(scope)
+	if err != nil {
+		return nil, err
+	}
 	hpcOpenshiftSvc, err := hcpopenshiftclusters.New(scope, skuCache, identitiesSvc)
 	if err != nil {
 		return nil, err
@@ -96,6 +101,7 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 			subnets.New(scope),
 			hpcOpenshiftIdentitiesSvc,
 			roleAssignmentsSvc,
+			keyVaultSvc,
 			hpcOpenshiftSvc,
 			hpcOpenshiftSecretsSvc,
 		},

@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	cplane "sigs.k8s.io/cluster-api-provider-azure/exp/api/controlplane/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta2"
@@ -120,6 +121,7 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 				FileCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
 				ImageRegistryManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
 				CloudNetworkConfigManagedIdentities:     "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
+				KmsManagedIdentities:                    "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/kms",
 			},
 			DataPlaneOperators: &cplane.DataPlaneOperators{
 				DiskCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
@@ -135,6 +137,10 @@ func fakeHcpOpenShiftClustersSpec() HcpOpenShiftClustersSpec {
 		NetworkSecurityGroupID: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
 		SubnetID:               "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 		VNetID:                 "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+		VaultID:                "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+		VaultName:              ptr.To("test-kv"),
+		VaultKeyName:           ptr.To("etcd-data-kms-encryption-key"),
+		VaultKeyVersion:        ptr.To("test-key-version"),
 		OutboundType:           "LoadBalancer",
 		Network: &cplane.NetworkSpec{
 			NetworkType: "OVNKubernetes",

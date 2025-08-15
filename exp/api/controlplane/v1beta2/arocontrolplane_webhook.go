@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -162,6 +163,7 @@ func (m *AROControlPlane) Validate(cli client.Client) error {
 		m.validateIdentity,
 		m.validateDNSPrefix,
 		m.validateManagedIdentities,
+		m.validatePlatformFields,
 	}
 	for _, validator := range validators {
 		if err := validator(cli); err != nil {
@@ -313,6 +315,36 @@ func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 	return nil
 }
 
+// validatePlatformFields validates platform-specific fields like KeyVault, Subnet, and SubscriptionID.
+func (m *AROControlPlane) validatePlatformFields(_ client.Client) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// Validate KeyVault resource ID
+	if m.Spec.Platform.KeyVault != "" {
+		allErrs = append(allErrs, validateAzureResourceID(
+			m.Spec.Platform.KeyVault,
+			field.NewPath("spec", "platform", "keyvault"),
+			"KeyVault")...)
+	}
+
+	// Validate Subnet resource ID
+	if m.Spec.Platform.Subnet != "" {
+		allErrs = append(allErrs, validateAzureResourceID(
+			m.Spec.Platform.Subnet,
+			field.NewPath("spec", "platform", "subnet"),
+			"subnet")...)
+	}
+
+	// Validate SubscriptionID (GUID format)
+	if m.Spec.SubscriptionID != "" {
+		allErrs = append(allErrs, validateSubscriptionID(
+			m.Spec.SubscriptionID,
+			field.NewPath("spec", "subscriptionID"))...)
+	}
+
+	return allErrs
+}
+
 // validateManagedIdentities validates all managed identities in the ManagedIdentities structure.
 func (m *AROControlPlane) validateManagedIdentities(_ client.Client) field.ErrorList {
 	var allErrs field.ErrorList
@@ -384,6 +416,12 @@ func (m *AROControlPlane) validateManagedIdentities(_ client.Client) field.Error
 				allErrs = append(allErrs, errs...)
 			}
 		}
+
+		if controlPlaneOperators.KmsManagedIdentities != "" {
+			if errs := validateUserAssignedIdentity(controlPlaneOperators.KmsManagedIdentities, controlPlanePath.Child("kmsManagedIdentities")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
 	}
 
 	// Validate DataPlaneOperators identities
@@ -423,6 +461,36 @@ func setDefaultOCPVersion(version string) string {
 		version = normalizedVersion
 	}
 	return version
+}
+
+// validateAzureResourceID validates an Azure resource ID format.
+func validateAzureResourceID(resourceID string, fldPath *field.Path, resourceType string) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if resourceID == "" {
+		return allErrs // Empty is valid (optional field)
+	}
+
+	if _, err := azureutil.ParseResourceID(resourceID); err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "must be a valid Azure "+resourceType+" resource ID"))
+	}
+
+	return allErrs
+}
+
+// validateSubscriptionID validates an Azure subscription ID (GUID format).
+func validateSubscriptionID(subscriptionID string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if subscriptionID == "" {
+		return allErrs // Empty is valid (optional field)
+	}
+
+	if _, err := uuid.Parse(subscriptionID); err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, subscriptionID, "must be a valid GUID"))
+	}
+
+	return allErrs
 }
 
 // validateUserAssignedIdentity validates a user-assigned identity resource ID.

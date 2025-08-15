@@ -58,6 +58,7 @@ var (
 				FileCsiDriverManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver",
 				ImageRegistryManagedIdentities:          "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry",
 				CloudNetworkConfigManagedIdentities:     "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config",
+				KmsManagedIdentities:                    "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/kms",
 			},
 			DataPlaneOperators: &cplane.DataPlaneOperators{
 				DiskCsiDriverManagedIdentities: "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver",
@@ -330,6 +331,7 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver":          {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry":           {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config":     {},
+				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/kms":                      {},
 				"/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/service":                  {},
 			},
 		},
@@ -347,6 +349,7 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 							"file-csi-driver":          ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/file-csi-driver"),
 							"image-registry":           ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-registry"),
 							"cloud-network-config":     ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cloud-network-config"),
+							"kms":                      ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/kms"),
 						},
 						DataPlaneOperators: map[string]*string{
 							"disk-csi-driver": ptr.To("/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/data-disk-csi-driver"),
@@ -363,6 +366,21 @@ func fakeHcpOpenShiftCluster() arohcp.HcpOpenShiftCluster {
 			DNS: &arohcp.DNSProfile{},
 			ClusterImageRegistry: &arohcp.ClusterImageRegistryProfile{
 				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled),
+			},
+			Etcd: &arohcp.EtcdProfile{
+				DataEncryption: &arohcp.EtcdDataEncryptionProfile{
+					KeyManagementMode: ptr.To(arohcp.EtcdDataEncryptionKeyManagementModeTypeCustomerManaged),
+					CustomerManaged: &arohcp.CustomerManagedEncryptionProfile{
+						EncryptionType: ptr.To(arohcp.CustomerManagedEncryptionTypeKms),
+						Kms: &arohcp.KmsEncryptionProfile{
+							ActiveKey: &arohcp.KmsKey{
+								VaultName: ptr.To("test-kv"),
+								Name:      ptr.To("etcd-data-kms-encryption-key"),
+								Version:   ptr.To("test-key-version"),
+							},
+						},
+					},
+				},
 			},
 			Network: &arohcp.NetworkProfile{
 				NetworkType: &networkType,

@@ -150,6 +150,9 @@ type AROPlatformProfileControlPlane struct {
 	// Azure Network Security Group ID
 	NetworkSecurityGroupID string `json:"networkSecurityGroupId,omitempty"`
 
+	// Azure KeyVault id
+	KeyVault string `json:"keyvault,omitempty"`
+
 	// ManagedIdentities Azure managed identities for ARO HCP.
 	ManagedIdentities ManagedIdentities `json:"managedIdentities,omitempty"`
 }
@@ -195,6 +198,9 @@ type ControlPlaneOperators struct {
 
 	// CloudNetworkConfigManagedIdentities "cloud-network-config" Microsoft.ManagedIdentity/userAssignedIdentities
 	CloudNetworkConfigManagedIdentities string `json:"cloudNetworkConfigManagedIdentities,omitempty"`
+
+	// KmsManagedIdentities "kms" Microsoft.ManagedIdentity/userAssignedIdentities
+	KmsManagedIdentities string `json:"kmsManagedIdentities,omitempty"`
 }
 
 // DataPlaneOperators represents managed identities for the DataPlane.
