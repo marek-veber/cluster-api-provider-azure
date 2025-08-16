@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -281,7 +282,7 @@ func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
 			Platform: AROPlatformProfileControlPlane{
 				ResourceGroup:          "test-rg",
 				Location:               "eastus",
-				NetworkSecurityGroupID: "test-nsg",
+				NetworkSecurityGroupID: "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
 				Subnet:                 "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
 				OutboundType:           "Loadbalancer",
 			},
@@ -366,6 +367,266 @@ func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
 				}
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestAROControlPlane_ValidateAzureResourceID(t *testing.T) {
+	testCases := []struct {
+		name         string
+		resourceID   string
+		resourceType string
+		expectError  bool
+		errorMsg     string
+	}{
+		// Valid resource IDs
+		{
+			name:         "valid KeyVault resource ID",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+			resourceType: "KeyVault",
+			expectError:  false,
+		},
+		{
+			name:         "valid subnet resource ID",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+			resourceType: "subnet",
+			expectError:  false,
+		},
+		{
+			name:         "valid network security group resource ID",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
+			resourceType: "networkSecurityGroup",
+			expectError:  false,
+		},
+		{
+			name:         "valid user assigned identity resource ID",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/test-identity",
+			resourceType: "userAssignedIdentity",
+			expectError:  false,
+		},
+		{
+			name:         "empty resource ID (should be valid)",
+			resourceID:   "",
+			resourceType: "KeyVault",
+			expectError:  false,
+		},
+		// Invalid resource IDs
+		{
+			name:         "invalid resource ID format",
+			resourceID:   "invalid-resource-id",
+			resourceType: "KeyVault",
+			expectError:  true,
+			errorMsg:     "must be a valid Azure KeyVault resource ID",
+		},
+		{
+			name:         "wrong provider type for KeyVault",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-resource",
+			resourceType: "KeyVault",
+			expectError:  true,
+			errorMsg:     "provider/type must be one of: Microsoft.KeyVault/vaults",
+		},
+		{
+			name:         "wrong provider type for subnet",
+			resourceID:   "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-resource",
+			resourceType: "subnet",
+			expectError:  true,
+			errorMsg:     "provider/type must be one of: Microsoft.Network/virtualNetworks",
+		},
+		{
+			name:         "invalid subscription ID (not a GUID)",
+			resourceID:   "/subscriptions/invalid-guid/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+			resourceType: "KeyVault",
+			expectError:  true,
+			errorMsg:     "subscription ID must be a valid GUID",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			errs := validateAzureResourceID(tc.resourceID, nil, tc.resourceType)
+
+			if tc.expectError {
+				g.Expect(errs).NotTo(BeEmpty())
+				if tc.errorMsg != "" {
+					found := false
+					for _, err := range errs {
+						if err.Error() != "" && (tc.errorMsg == "" || err.Detail == tc.errorMsg) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						// Check if any error contains the expected message
+						for _, err := range errs {
+							if strings.Contains(err.Detail, tc.errorMsg) {
+								found = true
+								break
+							}
+						}
+					}
+					g.Expect(found).To(BeTrue(), "Expected error message not found. Got errors: %v", errs)
+				}
+			} else {
+				g.Expect(errs).To(BeEmpty())
+			}
+		})
+	}
+}
+
+func TestAROControlPlane_ExtractProviderTypeFromResourceID(t *testing.T) {
+	testCases := []struct {
+		name         string
+		resourceID   string
+		expectedType string
+	}{
+		{
+			name:         "KeyVault resource ID",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv",
+			expectedType: "Microsoft.KeyVault/vaults",
+		},
+		{
+			name:         "Virtual Network resource ID",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet",
+			expectedType: "Microsoft.Network/virtualNetworks",
+		},
+		{
+			name:         "Network Security Group resource ID",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg",
+			expectedType: "Microsoft.Network/networkSecurityGroups",
+		},
+		{
+			name:         "User Assigned Identity resource ID",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity",
+			expectedType: "Microsoft.ManagedIdentity/userAssignedIdentities",
+		},
+		{
+			name:         "Subnet resource ID",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/subnet",
+			expectedType: "Microsoft.Network/virtualNetworks",
+		},
+		{
+			name:         "Invalid resource ID",
+			resourceID:   "invalid-resource-id",
+			expectedType: "",
+		},
+		{
+			name:         "Resource ID without providers",
+			resourceID:   "/subscriptions/sub/resourceGroups/rg/something/else",
+			expectedType: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			result := extractProviderTypeFromResourceID(tc.resourceID)
+			g.Expect(result).To(Equal(tc.expectedType))
+		})
+	}
+}
+
+func TestAROControlPlane_ValidatePlatformFields(t *testing.T) {
+	testCases := []struct {
+		name           string
+		controlPlane   *AROControlPlane
+		expectError    bool
+		expectedErrors []string
+	}{
+		{
+			name: "valid platform fields",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					SubscriptionID: "64f0619f-ebc2-4156-9d91-c4c781de7e54",
+					Platform: AROPlatformProfileControlPlane{
+						KeyVault:               "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+						Subnet:                 "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+						NetworkSecurityGroupID: "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/test-nsg",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "empty platform fields (should be valid)",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid KeyVault resource ID",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{
+						KeyVault: "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/wrong-type",
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"provider/type must be one of: Microsoft.KeyVault/vaults"},
+		},
+		{
+			name: "invalid subscription ID",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					SubscriptionID: "invalid-guid",
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"must be a valid GUID"},
+		},
+		{
+			name: "invalid subnet resource ID",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{
+						Subnet: "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/wrong-type",
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"provider/type must be one of: Microsoft.Network/virtualNetworks"},
+		},
+		{
+			name: "invalid network security group resource ID",
+			controlPlane: &AROControlPlane{
+				Spec: AROControlPlaneSpec{
+					Platform: AROPlatformProfileControlPlane{
+						NetworkSecurityGroupID: "/subscriptions/64f0619f-ebc2-4156-9d91-c4c781de7e54/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/wrong-type",
+					},
+				},
+			},
+			expectError:    true,
+			expectedErrors: []string{"provider/type must be one of: Microsoft.Network/networkSecurityGroups"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			errs := tc.controlPlane.validatePlatformFields(nil)
+
+			if tc.expectError {
+				g.Expect(errs).NotTo(BeEmpty())
+				for _, expectedError := range tc.expectedErrors {
+					found := false
+					for _, err := range errs {
+						if strings.Contains(err.Detail, expectedError) {
+							found = true
+							break
+						}
+					}
+					g.Expect(found).To(BeTrue(), "Expected error message '%s' not found. Got errors: %v", expectedError, errs)
+				}
+			} else {
+				g.Expect(errs).To(BeEmpty())
 			}
 		})
 	}

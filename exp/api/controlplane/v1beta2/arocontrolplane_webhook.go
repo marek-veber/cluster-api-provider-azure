@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/google/uuid"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -315,7 +316,7 @@ func (m *AROControlPlane) validateIdentity(_ client.Client) field.ErrorList {
 	return nil
 }
 
-// validatePlatformFields validates platform-specific fields like KeyVault, Subnet, and SubscriptionID.
+// validatePlatformFields validates platform-specific fields like KeyVault, Subnet, NetworkSecurityGroupID, and SubscriptionID.
 func (m *AROControlPlane) validatePlatformFields(_ client.Client) field.ErrorList {
 	var allErrs field.ErrorList
 
@@ -333,6 +334,14 @@ func (m *AROControlPlane) validatePlatformFields(_ client.Client) field.ErrorLis
 			m.Spec.Platform.Subnet,
 			field.NewPath("spec", "platform", "subnet"),
 			"subnet")...)
+	}
+
+	// Validate NetworkSecurityGroupID resource ID
+	if m.Spec.Platform.NetworkSecurityGroupID != "" {
+		allErrs = append(allErrs, validateAzureResourceID(
+			m.Spec.Platform.NetworkSecurityGroupID,
+			field.NewPath("spec", "platform", "networkSecurityGroupID"),
+			"networkSecurityGroup")...)
 	}
 
 	// Validate SubscriptionID (GUID format)
@@ -463,7 +472,7 @@ func setDefaultOCPVersion(version string) string {
 	return version
 }
 
-// validateAzureResourceID validates an Azure resource ID format.
+// validateAzureResourceID validates an Azure resource ID format with provider-specific checks.
 func validateAzureResourceID(resourceID string, fldPath *field.Path, resourceType string) field.ErrorList {
 	var allErrs field.ErrorList
 
@@ -471,8 +480,16 @@ func validateAzureResourceID(resourceID string, fldPath *field.Path, resourceTyp
 		return allErrs // Empty is valid (optional field)
 	}
 
-	if _, err := azureutil.ParseResourceID(resourceID); err != nil {
+	// Parse the resource ID using Azure SDK
+	parsedID, err := azureutil.ParseResourceID(resourceID)
+	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "must be a valid Azure "+resourceType+" resource ID"))
+		return allErrs
+	}
+
+	// Validate the resource ID format and provider-specific requirements
+	if validationErrs := validateAzureResourceIDFormat(resourceID, parsedID, fldPath, resourceType); len(validationErrs) > 0 {
+		allErrs = append(allErrs, validationErrs...)
 	}
 
 	return allErrs
@@ -501,10 +518,96 @@ func validateUserAssignedIdentity(identityResourceID string, fldPath *field.Path
 		return allErrs // Empty is valid (optional field)
 	}
 
-	// Use the same validation pattern as existing azuremachine_validation.go
-	if _, err := azureutil.ParseResourceID(identityResourceID); err != nil {
+	// Parse the resource ID using Azure SDK
+	parsedID, err := azureutil.ParseResourceID(identityResourceID)
+	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath, identityResourceID, "must be a valid Azure resource ID"))
+		return allErrs
+	}
+
+	// Validate the resource ID format and provider-specific requirements
+	if validationErrs := validateAzureResourceIDFormat(identityResourceID, parsedID, fldPath, "userAssignedIdentity"); len(validationErrs) > 0 {
+		allErrs = append(allErrs, validationErrs...)
 	}
 
 	return allErrs
+}
+
+// validateAzureResourceIDFormat validates the format and provider-specific requirements of Azure resource IDs.
+func validateAzureResourceIDFormat(resourceID string, parsedID *arm.ResourceID, fldPath *field.Path, resourceType string) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// Validate basic format: must start with /subscriptions/{subscriptionID}/resourceGroups/{resourceGroupName}
+	if parsedID.SubscriptionID == "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "must contain a valid subscription ID"))
+	} else {
+		// Validate subscription ID is a GUID
+		if _, err := uuid.Parse(parsedID.SubscriptionID); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "subscription ID must be a valid GUID"))
+		}
+	}
+
+	if parsedID.ResourceGroupName == "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "must contain a valid resource group name"))
+	}
+
+	// Validate provider and resource type based on the expected resource type using string parsing
+	expectedProviderTypes := getExpectedProviderTypes(resourceType)
+	if len(expectedProviderTypes) > 0 {
+		providerType := extractProviderTypeFromResourceID(resourceID)
+		if providerType != "" && !contains(expectedProviderTypes, providerType) {
+			allErrs = append(allErrs, field.Invalid(fldPath, resourceID,
+				"provider/type must be one of: "+strings.Join(expectedProviderTypes, ", ")+", got: "+providerType))
+		}
+	}
+
+	// Validate resource name is not empty
+	if parsedID.Name == "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, resourceID, "must contain a valid resource name"))
+	}
+
+	return allErrs
+}
+
+// getExpectedProviderTypes returns the expected provider/type combinations for a given resource type.
+func getExpectedProviderTypes(resourceType string) []string {
+	switch resourceType {
+	case "KeyVault":
+		return []string{"Microsoft.KeyVault/vaults"}
+	case "subnet":
+		return []string{"Microsoft.Network/virtualNetworks"}
+	case "networkSecurityGroup":
+		return []string{"Microsoft.Network/networkSecurityGroups"}
+	case "userAssignedIdentity":
+		return []string{"Microsoft.ManagedIdentity/userAssignedIdentities"}
+	default:
+		// For unknown resource types, allow any provider/type but still validate basic format
+		return []string{}
+	}
+}
+
+// extractProviderTypeFromResourceID extracts the provider/type from an Azure resource ID string.
+// Expected format: /subscriptions/{sub}/resourceGroups/{rg}/providers/{provider}/{type}/...
+func extractProviderTypeFromResourceID(resourceID string) string {
+	parts := strings.Split(resourceID, "/")
+
+	// Find the "providers" segment
+	for i, part := range parts {
+		if part == "providers" && i+2 < len(parts) {
+			// Return provider/type (e.g., "Microsoft.Network/virtualNetworks")
+			return parts[i+1] + "/" + parts[i+2]
+		}
+	}
+
+	return ""
+}
+
+// contains checks if a slice contains a specific string.
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
