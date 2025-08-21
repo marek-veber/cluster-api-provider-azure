@@ -301,6 +301,13 @@ func (r *AROControlPlaneReconciler) reconcilePaused(ctx context.Context, scope *
 	return reconcile.Result{}, nil
 }
 
+// +kubebuilder:rbac:groups=managedidentity.azure.com,resources=userassignedidentities,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=managedidentity.azure.com,resources=userassignedidentities/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=authorization.azure.com,resources=roleassignments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=authorization.azure.com,resources=roleassignments/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=keyvault.azure.com,resources=vaults,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=network.azure.com,resources=networksecuritygroups,verbs=get;list;watch;create;update;patch;delete
+
 func (r *AROControlPlaneReconciler) reconcileDelete(ctx context.Context, scope *scope.AROControlPlaneScope) (ctrl.Result, error) {
 	ctx, log, done := tele.StartSpanWithLogger(ctx,
 		"controllers.AROControlPlaneReconciler.reconcileDelete",

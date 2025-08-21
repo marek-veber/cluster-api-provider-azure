@@ -151,7 +151,7 @@ type AROPlatformProfileControlPlane struct {
 	NetworkSecurityGroupID string `json:"networkSecurityGroupId,omitempty"`
 
 	// Azure KeyVault id
-	KeyVault string `json:"keyvault,omitempty"`
+	KeyVault string `json:"keyVault,omitempty"`
 
 	// ManagedIdentities Azure managed identities for ARO HCP.
 	ManagedIdentities ManagedIdentities `json:"managedIdentities,omitempty"`

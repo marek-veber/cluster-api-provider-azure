@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,13 +34,13 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclustercredentials"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftclusters"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/hcpopenshiftidentities"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvault"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvaults"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networksecuritygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignmentsaso"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/userassignedidentities"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vaults"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -63,27 +64,11 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating a NewCache")
 	}
-	securityGroupsSvc, err := securitygroups.New(scope)
+	keyVaultSvc, err := keyvaults.New(scope)
 	if err != nil {
 		return nil, err
 	}
-	identitiesSvc, err := identities.NewClient(scope)
-	if err != nil {
-		return nil, err
-	}
-	hpcOpenshiftIdentitiesSvc, err := hcpopenshiftidentities.New(scope, identitiesSvc)
-	if err != nil {
-		return nil, err
-	}
-	roleAssignmentsSvc, err := roleassignments.New(scope)
-	if err != nil {
-		return nil, err
-	}
-	keyVaultSvc, err := keyvault.New(scope)
-	if err != nil {
-		return nil, err
-	}
-	hpcOpenshiftSvc, err := hcpopenshiftclusters.New(scope, skuCache, identitiesSvc)
+	hpcOpenshiftSvc, err := hcpopenshiftclusters.New(scope, skuCache)
 	if err != nil {
 		return nil, err
 	}
@@ -96,12 +81,13 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 		scope:      scope,
 		services: []azure.ServiceReconciler{
 			groups.New(scope),
+			networksecuritygroups.New(scope),
 			virtualnetworks.New(scope),
-			securityGroupsSvc,
 			subnets.New(scope),
-			hpcOpenshiftIdentitiesSvc,
-			roleAssignmentsSvc,
+			vaults.New(scope),
 			keyVaultSvc,
+			userassignedidentities.New(scope),
+			roleassignmentsaso.New(scope),
 			hpcOpenshiftSvc,
 			hpcOpenshiftSecretsSvc,
 		},
@@ -116,10 +102,12 @@ func newAROControlPlaneService(scope *scope.AROControlPlaneScope) (*aroControlPl
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *aroControlPlaneService) reconcile(ctx context.Context) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.aroControlPlaneService.Reconcile")
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.aroControlPlaneService.Reconcile")
 	defer done()
 
 	for _, service := range s.services {
+		serviceName := service.Name()
+		log.V(4).Info(fmt.Sprintf("reconcile-service: %s", serviceName))
 		if err := service.Reconcile(ctx); err != nil {
 			return errors.Wrapf(err, "failed to reconcile AROControlPlane service %s", service.Name())
 		}

@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keyvault
+package keyvaults
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -30,7 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvault/mock_keyvault"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/keyvaults/mock_keyvault"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -115,15 +114,12 @@ func TestReconcileKeyVault(t *testing.T) {
 			},
 		},
 		{
-			name:          "create key vault successfully",
-			expectedError: "",
+			name:          "key vault does not exist - should fail",
+			expectedError: "failed to get KeyVault test-keyvault:",
 			expect: func(s *mock_keyvault.MockKeyVaultScopeMockRecorder, c *mock_keyvault.MockClientMockRecorder) {
 				s.DefaultedAzureCallTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
 				s.KeyVaultSpecs().Return([]azure.ResourceSpecGetter{&fakeKeyVaultSpec})
 				c.Get(gomockinternal.AContext(), &fakeKeyVaultSpec).Return(nil, newNotFoundError())
-				c.CreateOrUpdate(gomockinternal.AContext(), &fakeKeyVaultSpec, gomock.Any()).Return(fakeKeyVault, nil)
-				// EnsureETCDEncryptionKey is called after reconciling KeyVault
-				s.GetKeyVaultResourceID().Return("")
 			},
 		},
 	}
@@ -144,7 +140,7 @@ func TestReconcileKeyVault(t *testing.T) {
 				client: clientMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
@@ -162,20 +158,10 @@ func TestDeleteKeyVault(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name:          "no key vault specs",
+			name:          "delete does nothing",
 			expectedError: "",
 			expect: func(s *mock_keyvault.MockKeyVaultScopeMockRecorder, c *mock_keyvault.MockClientMockRecorder) {
-				s.DefaultedAzureCallTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
-				s.KeyVaultSpecs().Return([]azure.ResourceSpecGetter{})
-			},
-		},
-		{
-			name:          "delete key vault successfully",
-			expectedError: "",
-			expect: func(s *mock_keyvault.MockKeyVaultScopeMockRecorder, c *mock_keyvault.MockClientMockRecorder) {
-				s.DefaultedAzureCallTimeout().Return(reconciler.DefaultAzureServiceReconcileTimeout)
-				s.KeyVaultSpecs().Return([]azure.ResourceSpecGetter{&fakeKeyVaultSpec})
-				c.Delete(gomockinternal.AContext(), &fakeKeyVaultSpec).Return(nil)
+				// Delete method now does nothing, so no expectations needed
 			},
 		},
 	}
@@ -196,7 +182,7 @@ func TestDeleteKeyVault(t *testing.T) {
 				client: clientMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
@@ -271,7 +257,7 @@ func TestEnsureETCDEncryptionKey(t *testing.T) {
 				client: clientMock,
 			}
 
-			err := s.EnsureETCDEncryptionKey(context.TODO(), scopeMock)
+			err := s.EnsureETCDEncryptionKey(t.Context(), scopeMock)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))

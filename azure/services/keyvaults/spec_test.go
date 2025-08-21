@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keyvault
+package keyvaults
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 )
 
 func TestParameters(t *testing.T) {
@@ -39,7 +37,8 @@ func TestParameters(t *testing.T) {
 			name:     "no existing key vault",
 			spec:     fakeKeyVaultSpec,
 			existing: nil,
-			expected: fakeKeyVaultParameters(),
+			expected: nil,
+			errorMsg: "vault \"test-keyvault\" not exists",
 		},
 		{
 			name:     "existing is not a key vault",
@@ -57,7 +56,7 @@ func TestParameters(t *testing.T) {
 			name:     "existing key vault - changes detected",
 			spec:     fakeKeyVaultSpecWithDifferentSKU(),
 			existing: fakeKeyVault,
-			expected: fakeKeyVaultParametersWithDifferentSKU(),
+			expected: nil,
 		},
 	}
 
@@ -66,7 +65,7 @@ func TestParameters(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			result, err := tc.spec.Parameters(context.Background(), tc.existing)
+			result, err := tc.spec.Parameters(t.Context(), tc.existing)
 			if tc.errorMsg != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.errorMsg))
@@ -157,44 +156,8 @@ func TestExtractVaultNameFromResourceIDSpec(t *testing.T) {
 
 // Helper functions for test data
 
-func fakeKeyVaultParameters() armkeyvault.VaultCreateOrUpdateParameters {
-	return armkeyvault.VaultCreateOrUpdateParameters{
-		Location: ptr.To("eastus"),
-		Properties: &armkeyvault.VaultProperties{
-			TenantID: ptr.To("test-tenant-id"),
-			SKU: &armkeyvault.SKU{
-				Name: ptr.To(armkeyvault.SKUNameStandard),
-			},
-			AccessPolicies: []*armkeyvault.AccessPolicyEntry{
-				{
-					TenantID: ptr.To("test-tenant-id"),
-					ObjectID: ptr.To("test-object-id"),
-					Permissions: &armkeyvault.Permissions{
-						Keys: []*armkeyvault.KeyPermissions{
-							ptr.To(armkeyvault.KeyPermissionsGet),
-							ptr.To(armkeyvault.KeyPermissionsCreate),
-						},
-					},
-				},
-			},
-			EnabledForDeployment:         ptr.To(false),
-			EnabledForDiskEncryption:     ptr.To(false),
-			EnabledForTemplateDeployment: ptr.To(false),
-			EnableSoftDelete:             ptr.To(true),
-			SoftDeleteRetentionInDays:    ptr.To(int32(90)),
-			EnableRbacAuthorization:      ptr.To(true),
-		},
-	}
-}
-
 func fakeKeyVaultSpecWithDifferentSKU() KeyVaultSpec {
 	spec := fakeKeyVaultSpec
 	spec.SKU = armkeyvault.SKUNamePremium
 	return spec
-}
-
-func fakeKeyVaultParametersWithDifferentSKU() armkeyvault.VaultCreateOrUpdateParameters {
-	params := fakeKeyVaultParameters()
-	params.Properties.SKU.Name = ptr.To(armkeyvault.SKUNamePremium)
-	return params
 }

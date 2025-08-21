@@ -25,7 +25,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/identities"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	arohcp "sigs.k8s.io/cluster-api-provider-azure/exp/third_party/aro-hcp/api/v20240610preview/generated"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -49,13 +48,12 @@ type (
 		Scope HcpOpenShiftClusterScope
 		Client
 		resourceSKUCache *resourceskus.Cache
-		identitiesGetter identities.Client
 		async.Reconciler
 	}
 )
 
 // New creates a new service.
-func New(scope HcpOpenShiftClusterScope, skuCache *resourceskus.Cache, identitiesGetter identities.Client) (*Service, error) {
+func New(scope HcpOpenShiftClusterScope, skuCache *resourceskus.Cache) (*Service, error) {
 	client, err := newClient(scope, scope.DefaultedAzureCallTimeout())
 	if err != nil {
 		return nil, err
@@ -66,7 +64,6 @@ func New(scope HcpOpenShiftClusterScope, skuCache *resourceskus.Cache, identitie
 			arohcp.HcpOpenShiftClustersClientDeleteResponse](scope, client, client),
 		Client:           client,
 		resourceSKUCache: skuCache,
-		identitiesGetter: identitiesGetter,
 	}, nil
 }
 

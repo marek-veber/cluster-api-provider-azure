@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -172,7 +171,7 @@ func createTestScopeWithOptions(t *testing.T, kubeconfigData *string, createKube
 		Timeouts:        timeouts,
 	}
 
-	aroScope, err := scope.NewAROControlPlaneScope(context.TODO(), scopeParams)
+	aroScope, err := scope.NewAROControlPlaneScope(t.Context(), scopeParams)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	// Set kubeconfig in scope if provided
@@ -193,7 +192,7 @@ func TestNewAROControlPlaneService(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(service).NotTo(BeNil())
 	g.Expect(service.scope).To(Equal(aroScope))
-	g.Expect(service.services).To(HaveLen(9)) // groups, virtualnetworks, securitygroups, subnets, hcpopenshiftidentities, roleassignments, keyvault, hcpopenshiftclusters, hcpopenshiftclustercredentials
+	g.Expect(service.services).To(HaveLen(10)) // groups, networksecuritygroups, virtualnetworks, subnets, vaults, keyvaults, userassignedidentities, roleassignmentsaso, hcpopenshiftclusters, hcpopenshiftclustercredentials
 	g.Expect(service.skuCache).NotTo(BeNil())
 	g.Expect(service.Reconcile).NotTo(BeNil())
 	g.Expect(service.Pause).NotTo(BeNil())
@@ -257,7 +256,7 @@ func TestAROControlPlaneService_Reconcile(t *testing.T) {
 					Name:      secret.Name(scope.Cluster.Name, secret.Kubeconfig),
 					Namespace: scope.Cluster.Namespace,
 				}
-				err := client.Get(context.TODO(), key, kubeconfigSecret)
+				err := client.Get(t.Context(), key, kubeconfigSecret)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(kubeconfigSecret.Data).To(HaveKey(secret.KubeconfigDataName))
 			},
@@ -294,7 +293,7 @@ func TestAROControlPlaneService_Reconcile(t *testing.T) {
 
 			service, aroScope := tc.mockServices(t)
 
-			err := service.Reconcile(context.TODO())
+			err := service.Reconcile(t.Context())
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -375,7 +374,7 @@ func TestAROControlPlaneService_Pause(t *testing.T) {
 
 			service := tc.mockServices(t)
 
-			err := service.Pause(context.TODO())
+			err := service.Pause(t.Context())
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -442,7 +441,7 @@ func TestAROControlPlaneService_Delete(t *testing.T) {
 
 			service := tc.mockServices(t)
 
-			err := service.Delete(context.TODO())
+			err := service.Delete(t.Context())
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -471,7 +470,7 @@ func TestAROControlPlaneService_ReconcileKubeconfig(t *testing.T) {
 					Name:      secret.Name(clusterName, secret.Kubeconfig),
 					Namespace: "default",
 				}
-				err := client.Get(context.TODO(), kubeconfigKey, kubeconfigSecret)
+				err := client.Get(t.Context(), kubeconfigKey, kubeconfigSecret)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(kubeconfigSecret.Data).To(HaveKey(secret.KubeconfigDataName))
 
@@ -481,7 +480,7 @@ func TestAROControlPlaneService_ReconcileKubeconfig(t *testing.T) {
 					Name:      secret.Name(clusterName, secret.ClusterCA),
 					Namespace: "default",
 				}
-				err = client.Get(context.TODO(), caKey, caSecret)
+				err = client.Get(t.Context(), caKey, caSecret)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(caSecret.Data).To(HaveKey(secret.TLSCrtDataName))
 			},
@@ -514,7 +513,7 @@ users:
 					Name:      secret.Name(clusterName, secret.Kubeconfig),
 					Namespace: "default",
 				}
-				err := client.Get(context.TODO(), kubeconfigKey, kubeconfigSecret)
+				err := client.Get(t.Context(), kubeconfigKey, kubeconfigSecret)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(kubeconfigSecret.Data).To(HaveKey(secret.KubeconfigDataName))
 			},
@@ -532,7 +531,7 @@ users:
 				kubeclient: fakeClient,
 			}
 
-			err := service.reconcileKubeconfig(context.TODO())
+			err := service.reconcileKubeconfig(t.Context())
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())

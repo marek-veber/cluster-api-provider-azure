@@ -24,6 +24,7 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
+	asoauthorizationv1api20220401 "github.com/Azure/azure-service-operator/v2/api/authorization/v1api20220401"
 	asocontainerservicev1api20210501 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20210501"
 	asocontainerservicev1api20230201 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230201"
 	asocontainerservicev1api20230315preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20230315preview"
@@ -31,7 +32,9 @@ import (
 	asocontainerservicev1api20231102preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20231102preview"
 	asocontainerservicev1api20240402preview "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240402preview"
 	asocontainerservicev1api20240901 "github.com/Azure/azure-service-operator/v2/api/containerservice/v1api20240901"
+	asokeyvaultv1 "github.com/Azure/azure-service-operator/v2/api/keyvault/v1api20230701"
 	asokubernetesconfigurationv1 "github.com/Azure/azure-service-operator/v2/api/kubernetesconfiguration/v1api20230501"
+	asomanagedidentityv1api20230131 "github.com/Azure/azure-service-operator/v2/api/managedidentity/v1api20230131"
 	asonetworkv1api20201101 "github.com/Azure/azure-service-operator/v2/api/network/v1api20201101"
 	asonetworkv1api20220701 "github.com/Azure/azure-service-operator/v2/api/network/v1api20220701"
 	asoresourcesv1 "github.com/Azure/azure-service-operator/v2/api/resources/v1api20200601"
@@ -88,15 +91,18 @@ func init() {
 	_ = expv1.AddToScheme(scheme)
 	_ = kubeadmv1.AddToScheme(scheme)
 	_ = asoresourcesv1.AddToScheme(scheme)
+	_ = asoauthorizationv1api20220401.AddToScheme(scheme)
 	_ = asocontainerservicev1api20210501.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230201.AddToScheme(scheme)
 	_ = asocontainerservicev1api20231001.AddToScheme(scheme)
+	_ = asomanagedidentityv1api20230131.AddToScheme(scheme)
 	_ = asonetworkv1api20220701.AddToScheme(scheme)
 	_ = asonetworkv1api20201101.AddToScheme(scheme)
 	_ = asocontainerservicev1api20230315preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20231102preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240402preview.AddToScheme(scheme)
 	_ = asocontainerservicev1api20240901.AddToScheme(scheme)
+	_ = asokeyvaultv1.AddToScheme(scheme)
 	_ = asokubernetesconfigurationv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keyvault
+package keyvaults
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	"github.com/pkg/errors"
-	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -68,7 +67,7 @@ func (s *KeyVaultSpec) ResourceType() string {
 
 // Parameters returns the parameters for the Key Vault.
 func (s *KeyVaultSpec) Parameters(ctx context.Context, existing interface{}) (params interface{}, err error) {
-	_, log, done := tele.StartSpanWithLogger(ctx, "keyvault.KeyVaultSpec.Parameters")
+	_, _, done := tele.StartSpanWithLogger(ctx, "keyvault.KeyVaultSpec.Parameters")
 	defer done()
 
 	var existingKeyVault *armkeyvault.Vault
@@ -80,47 +79,10 @@ func (s *KeyVaultSpec) Parameters(ctx context.Context, existing interface{}) (pa
 		existingKeyVault = &vault
 	}
 
-	// If the Key Vault already exists, check if it needs updates
-	if existingKeyVault != nil {
-		// Check if SKU has changed
-		needsUpdate := false
-		if existingKeyVault.Properties != nil && existingKeyVault.Properties.SKU != nil {
-			if existingKeyVault.Properties.SKU.Name == nil || *existingKeyVault.Properties.SKU.Name != s.SKU {
-				needsUpdate = true
-				log.V(2).Info("Key Vault SKU change detected", "name", s.Name, "oldSKU", existingKeyVault.Properties.SKU.Name, "newSKU", s.SKU)
-			}
-		}
-
-		if !needsUpdate {
-			log.V(2).Info("Key Vault already exists and no changes needed", "name", s.Name)
-			return nil, nil
-		}
-		// Fall through to create update parameters
+	if existingKeyVault == nil {
+		return nil, fmt.Errorf("vault %q not exists", s.Name)
 	}
-
-	// Create new Key Vault parameters
-	vaultProperties := &armkeyvault.VaultProperties{
-		TenantID: &s.TenantID,
-		SKU: &armkeyvault.SKU{
-			Name: &s.SKU,
-		},
-		AccessPolicies:               s.AccessPolicies,
-		EnabledForDeployment:         ptr.To(false),
-		EnabledForDiskEncryption:     ptr.To(false),
-		EnabledForTemplateDeployment: ptr.To(false),
-		EnableSoftDelete:             ptr.To(true),
-		SoftDeleteRetentionInDays:    ptr.To(int32(90)),
-		EnableRbacAuthorization:      ptr.To(true), // Use RBAC instead of access policies
-	}
-
-	params = armkeyvault.VaultCreateOrUpdateParameters{
-		Location:   &s.Location,
-		Properties: vaultProperties,
-		Tags:       s.Tags,
-	}
-
-	log.V(2).Info("Creating new Key Vault", "name", s.Name, "location", s.Location)
-	return params, nil
+	return nil, nil
 }
 
 // KeySpec defines the specification for a Key Vault key.

@@ -17,7 +17,6 @@ limitations under the License.
 package mutators
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -290,7 +289,7 @@ func TestSetAROClusterDefaults(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 			mutator := SetAROClusterDefaults(fakeClient, tc.aroControlPlane, tc.cluster)
 
-			err := mutator(context.TODO(), tc.resources)
+			err := mutator(t.Context(), tc.resources)
 
 			if tc.expectedError != nil {
 				g.Expect(err).To(HaveOccurred())
@@ -373,7 +372,7 @@ func TestSetAROClusterKubernetesVersion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := setAROClusterKubernetesVersion(context.TODO(), tc.aroControlPlane, "spec.resources[0]", tc.aroCluster)
+			err := setAROClusterKubernetesVersion(t.Context(), tc.aroControlPlane, "spec.resources[0]", tc.aroCluster)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -482,7 +481,7 @@ func TestSetAROClusterServiceCIDR(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := setAROClusterServiceCIDR(context.TODO(), tc.cluster, "spec.resources[0]", tc.aroCluster)
+			err := setAROClusterServiceCIDR(t.Context(), tc.cluster, "spec.resources[0]", tc.aroCluster)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -563,7 +562,7 @@ func TestSetAROClusterPodCIDR(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := setAROClusterPodCIDR(context.TODO(), tc.cluster, "spec.resources[0]", tc.aroCluster)
+			err := setAROClusterPodCIDR(t.Context(), tc.cluster, "spec.resources[0]", tc.aroCluster)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -643,7 +642,7 @@ func TestSetAROClusterCredentials(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := setAROClusterCredentials(context.TODO(), tc.cluster, "spec.resources[0]", tc.aroCluster)
+			err := setAROClusterCredentials(t.Context(), tc.cluster, "spec.resources[0]", tc.aroCluster)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())

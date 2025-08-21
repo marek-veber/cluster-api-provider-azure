@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -71,7 +70,7 @@ func TestAROMAchinePoolWebhook_Default(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 			webhook := &aroMachinePoolWebhook{Client: fakeClient}
 
-			err := webhook.Default(context.TODO(), machinePool)
+			err := webhook.Default(t.Context(), machinePool)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(machinePool.Spec.NodePoolName).To(Equal(tc.expectedNodePoolName), tc.description)
 		})

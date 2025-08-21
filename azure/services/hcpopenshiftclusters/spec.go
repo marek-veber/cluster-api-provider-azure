@@ -89,6 +89,9 @@ func (s *HcpOpenShiftClustersSpec) GetManagedIdentities() (*arohcp.UserAssignedI
 		},
 		ServiceManagedIdentity: &s.ManagedIdentities.ServiceManagedIdentity,
 	}
+	if s.VaultID == "" {
+		delete(userAssignedIdentities.ControlPlaneOperators, "kms")
+	}
 	managedServiceIdentity := &arohcp.ManagedServiceIdentity{
 		Type:                   &managedServiceIdentityType,
 		UserAssignedIdentities: map[string]*arohcp.UserAssignedIdentity{},
@@ -189,6 +192,20 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 	if errV != nil {
 		return nil, errV
 	}
+	dataEncryption := &arohcp.EtcdDataEncryptionProfile{}
+	if s.VaultID != "" {
+		dataEncryption.KeyManagementMode = ptr.To(arohcp.EtcdDataEncryptionKeyManagementModeTypeCustomerManaged)
+		dataEncryption.CustomerManaged = &arohcp.CustomerManagedEncryptionProfile{
+			EncryptionType: ptr.To(arohcp.CustomerManagedEncryptionTypeKms),
+			Kms: &arohcp.KmsEncryptionProfile{
+				ActiveKey: &arohcp.KmsKey{
+					VaultName: s.VaultName,
+					Name:      s.VaultKeyName,
+					Version:   s.VaultKeyVersion,
+				},
+			},
+		}
+	}
 
 	ret := arohcp.HcpOpenShiftCluster{
 		Location: ptr.To(s.Location),
@@ -206,7 +223,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 			},
 			//Autoscaling:          nil,
 			ClusterImageRegistry: &arohcp.ClusterImageRegistryProfile{
-				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled), // TODO: when should this be Disabled?
+				State: ptr.To(arohcp.ClusterImageRegistryProfileStateEnabled),
 			},
 			// Capabilities: &arohcp.ClusterCapabilitiesProfile{Disabled: nil},
 			DNS: &arohcp.DNSProfile{
@@ -215,19 +232,7 @@ func (s *HcpOpenShiftClustersSpec) Parameters(ctx context.Context, existing inte
 			},
 			// azure.etcd_encryption.data_encryption.customer_managed
 			Etcd: &arohcp.EtcdProfile{
-				DataEncryption: &arohcp.EtcdDataEncryptionProfile{
-					KeyManagementMode: ptr.To(arohcp.EtcdDataEncryptionKeyManagementModeTypeCustomerManaged),
-					CustomerManaged: &arohcp.CustomerManagedEncryptionProfile{
-						EncryptionType: ptr.To(arohcp.CustomerManagedEncryptionTypeKms),
-						Kms: &arohcp.KmsEncryptionProfile{
-							ActiveKey: &arohcp.KmsKey{
-								VaultName: s.VaultName,
-								Name:      s.VaultKeyName,
-								Version:   s.VaultKeyVersion,
-							},
-						},
-					},
-				},
+				DataEncryption: dataEncryption,
 			},
 			Network: &arohcp.NetworkProfile{
 				NetworkType: networkType,

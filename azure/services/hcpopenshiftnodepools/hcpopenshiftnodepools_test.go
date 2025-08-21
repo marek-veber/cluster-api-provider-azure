@@ -17,7 +17,6 @@ limitations under the License.
 package hcpopenshiftnodepools
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -145,7 +144,7 @@ func TestReconcileHcpOpenShiftNodePool(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Reconcile(context.TODO())
+			err := s.Reconcile(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
@@ -220,7 +219,7 @@ func TestDeleteHcpOpenShiftNodePool(t *testing.T) {
 				Reconciler: asyncMock,
 			}
 
-			err := s.Delete(context.TODO())
+			err := s.Delete(t.Context())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(strings.ReplaceAll(err.Error(), "\n", "")).To(MatchRegexp(tc.expectedError))
@@ -236,7 +235,7 @@ func TestIsManaged(t *testing.T) {
 	t.Parallel()
 
 	s := &Service{}
-	managed, err := s.IsManaged(context.TODO())
+	managed, err := s.IsManaged(t.Context())
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(managed).To(BeTrue())
 }

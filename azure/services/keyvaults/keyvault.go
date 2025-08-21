@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keyvault
+package keyvaults
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func (s *Service) Name() string {
 	return serviceName
 }
 
-// Reconcile gets/creates/updates a key vault and ensures ETCD encryption key exists.
+// Reconcile gets a key vault and ensures ETCD encryption key exists.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.Reconcile")
 	defer done()
@@ -84,28 +84,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		log.V(2).Info("reconciling KeyVault", "keyvault", keyVaultSpec.ResourceName())
 
 		// Check if KeyVault exists
-		existing, err := s.client.Get(ctx, keyVaultSpec)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to get KeyVault %s", keyVaultSpec.ResourceName())
-		}
-
-		// Get parameters for create/update
-		parameters, err := keyVaultSpec.Parameters(ctx, existing)
+		_, err := s.client.Get(ctx, keyVaultSpec)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get parameters for KeyVault %s", keyVaultSpec.ResourceName())
-		}
-
-		// Skip if no parameters (already exists and no changes needed)
-		if parameters == nil {
-			log.V(2).Info("KeyVault already exists and no changes needed", "keyvault", keyVaultSpec.ResourceName())
-		} else {
-			// Create or update the KeyVault
-			_, err = s.client.CreateOrUpdate(ctx, keyVaultSpec, parameters)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create or update KeyVault %s", keyVaultSpec.ResourceName())
-			}
-
-			log.V(2).Info("successfully reconciled KeyVault", "keyvault", keyVaultSpec.ResourceName())
+			return errors.Wrapf(err, "failed to get KeyVault %s", keyVaultSpec.ResourceName())
 		}
 	}
 
@@ -119,29 +100,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the key vault.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, log, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.Delete")
+	_, _, done := tele.StartSpanWithLogger(ctx, "keyvault.Service.Delete")
 	defer done()
-
-	ctx, cancel := context.WithTimeout(ctx, s.Scope.DefaultedAzureCallTimeout())
-	defer cancel()
-
-	// Get all KeyVault specs
-	keyVaultSpecs := s.Scope.KeyVaultSpecs()
-	if len(keyVaultSpecs) == 0 {
-		return nil
-	}
-
-	// Process each KeyVault spec
-	for _, keyVaultSpec := range keyVaultSpecs {
-		log.V(2).Info("deleting KeyVault", "keyvault", keyVaultSpec.ResourceName())
-
-		err := s.client.Delete(ctx, keyVaultSpec)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete KeyVault %s", keyVaultSpec.ResourceName())
-		}
-
-		log.V(2).Info("successfully deleted KeyVault", "keyvault", keyVaultSpec.ResourceName())
-	}
 
 	return nil
 }

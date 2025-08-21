@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -216,7 +215,7 @@ func TestAROClusterReconciler_Reconcile(t *testing.T) {
 				WatchFilterValue: "",
 			}
 
-			result, err := reconciler.Reconcile(context.Background(), tc.request)
+			result, err := reconciler.Reconcile(t.Context(), tc.request)
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -229,7 +228,7 @@ func TestAROClusterReconciler_Reconcile(t *testing.T) {
 			// Check AROCluster state if it exists and not being deleted
 			if tc.aroClusterExists && !tc.deletionTimestamp {
 				var updatedAROCluster infrav2.AROCluster
-				err := fakeClient.Get(context.Background(), types.NamespacedName{
+				err := fakeClient.Get(t.Context(), types.NamespacedName{
 					Namespace: testNamespace,
 					Name:      testAROClusterName,
 				}, &updatedAROCluster)
@@ -388,7 +387,7 @@ func TestAROClusterReconciler_reconcileNormal(t *testing.T) {
 				WatchFilterValue: "",
 			}
 
-			result, err := reconciler.reconcileNormal(context.Background(), tc.aroCluster, tc.cluster)
+			result, err := reconciler.reconcileNormal(t.Context(), tc.aroCluster, tc.cluster)
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -399,7 +398,7 @@ func TestAROClusterReconciler_reconcileNormal(t *testing.T) {
 
 			// Check AROCluster state
 			var updatedAROCluster infrav2.AROCluster
-			err = fakeClient.Get(context.Background(), types.NamespacedName{
+			err = fakeClient.Get(t.Context(), types.NamespacedName{
 				Namespace: tc.aroCluster.Namespace,
 				Name:      tc.aroCluster.Name,
 			}, &updatedAROCluster)
@@ -463,14 +462,14 @@ func TestAROClusterReconciler_reconcilePaused(t *testing.T) {
 				WatchFilterValue: "",
 			}
 
-			result, err := reconciler.reconcilePaused(context.Background(), tc.aroCluster)
+			result, err := reconciler.reconcilePaused(t.Context(), tc.aroCluster)
 
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(result).To(Equal(ctrl.Result{}))
 
 			// Check that Ready status is false
 			var updatedAROCluster infrav2.AROCluster
-			err = fakeClient.Get(context.Background(), types.NamespacedName{
+			err = fakeClient.Get(t.Context(), types.NamespacedName{
 				Namespace: tc.aroCluster.Namespace,
 				Name:      tc.aroCluster.Name,
 			}, &updatedAROCluster)
@@ -518,14 +517,14 @@ func TestAROClusterReconciler_reconcileDelete(t *testing.T) {
 				WatchFilterValue: "",
 			}
 
-			result, err := reconciler.reconcileDelete(context.Background(), tc.aroCluster)
+			result, err := reconciler.reconcileDelete(t.Context(), tc.aroCluster)
 
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(result).To(Equal(tc.expectedResult))
 
 			// Check that Ready status is false
 			var updatedAROCluster infrav2.AROCluster
-			err = fakeClient.Get(context.Background(), types.NamespacedName{
+			err = fakeClient.Get(t.Context(), types.NamespacedName{
 				Namespace: tc.aroCluster.Namespace,
 				Name:      tc.aroCluster.Name,
 			}, &updatedAROCluster)
@@ -587,7 +586,7 @@ func TestAROClusterReconciler_NotFound(t *testing.T) {
 		WatchFilterValue: "",
 	}
 
-	result, err := reconciler.Reconcile(context.Background(), reconcile.Request{
+	result, err := reconciler.Reconcile(t.Context(), reconcile.Request{
 		NamespacedName: types.NamespacedName{
 			Namespace: testNamespace,
 			Name:      "nonexistent",
@@ -631,7 +630,7 @@ func TestAROClusterReconciler_GetOwnerClusterError(t *testing.T) {
 		WatchFilterValue: "",
 	}
 
-	result, err := reconciler.Reconcile(context.Background(), reconcile.Request{
+	result, err := reconciler.Reconcile(t.Context(), reconcile.Request{
 		NamespacedName: types.NamespacedName{
 			Namespace: testNamespace,
 			Name:      testAROClusterName,

@@ -194,7 +194,7 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(ctx context.Context, existing inte
 		immutable := []string{}
 
 		// TODO: why is existingNodePool.Location == nil :(
-		checkChange("location", existingNodePool.Location, ret.Location, &changes)
+		// checkChange("location", existingNodePool.Location, ret.Location, &changes)
 
 		if existingNodePool.Properties == nil {
 			changes = append(changes, "adding properties: nil -> new value")
@@ -256,16 +256,27 @@ func (s *HcpOpenShiftNodePoolSpec) Parameters(ctx context.Context, existing inte
 
 // Helper functions for change detection and immutability enforcement.
 
+const nilString = "nil"
+
 func ptrToS(a any) string {
 	if a == nil {
-		return "nil"
+		return nilString
 	}
 	switch msg := a.(type) {
 	case *string:
+		if msg == nil {
+			return nilString
+		}
 		return fmt.Sprintf("%q", *msg)
 	case *int32:
+		if msg == nil {
+			return nilString
+		}
 		return fmt.Sprintf("%d", *msg)
 	case *bool:
+		if msg == nil {
+			return nilString
+		}
 		return fmt.Sprintf("%t", *msg)
 	default:
 		return fmt.Sprintf("%T:???", msg)

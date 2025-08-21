@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -96,7 +95,7 @@ func TestAROControlPlaneWebhook_Default(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 			webhook := &aroControlPlaneWebhook{Client: fakeClient}
 
-			err := webhook.Default(context.TODO(), controlPlane)
+			err := webhook.Default(t.Context(), controlPlane)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(controlPlane.Spec.Version).To(Equal(tc.expectedVersion), tc.description)
 		})
@@ -357,7 +356,7 @@ func TestAROControlPlaneWebhook_ValidateUpdate_ImmutableFields(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 			webhook := &aroControlPlaneWebhook{Client: fakeClient}
 
-			_, err := webhook.ValidateUpdate(context.TODO(), old, upd)
+			_, err := webhook.ValidateUpdate(t.Context(), old, upd)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())

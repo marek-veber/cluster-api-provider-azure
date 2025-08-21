@@ -189,7 +189,7 @@ spec:
                 description: AROPlatformProfileControlPlane represents the Azure platform
                   configuration.
                 properties:
-                  keyvault:
+                  keyVault:
                     description: Azure KeyVault id
                     type: string
                   location:

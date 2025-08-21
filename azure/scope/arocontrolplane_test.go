@@ -145,7 +145,7 @@ func TestNewAROControlPlaneScope(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			params := tc.setup(mockCtrl)
-			_, err := NewAROControlPlaneScope(context.TODO(), params)
+			_, err := NewAROControlPlaneScope(t.Context(), params)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -627,7 +627,7 @@ func TestAROControlPlaneScope_AnnotateKubeconfigInvalid(t *testing.T) {
 				ControlPlane: controlPlane,
 			}
 
-			err := scope.AnnotateKubeconfigInvalid(context.TODO())
+			err := scope.AnnotateKubeconfigInvalid(t.Context())
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred(), tc.description)
@@ -641,7 +641,7 @@ func TestAROControlPlaneScope_AnnotateKubeconfigInvalid(t *testing.T) {
 						Name:      secret.Name(cluster.Name, secret.Kubeconfig),
 						Namespace: cluster.Namespace,
 					}
-					err := fakeClient.Get(context.TODO(), key, updatedSecret)
+					err := fakeClient.Get(t.Context(), key, updatedSecret)
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(updatedSecret.Annotations).To(HaveKey("aro.azure.com/kubeconfig-refresh-needed"))
 					g.Expect(updatedSecret.Annotations["aro.azure.com/kubeconfig-refresh-needed"]).To(Equal("true"))
@@ -793,7 +793,7 @@ func TestAROControlPlaneScope_ShouldReconcileKubeconfig(t *testing.T) {
 				KubeonfigExpirationTimestamp: tc.expirationTime,
 			}
 
-			result := scope.ShouldReconcileKubeconfig(context.TODO())
+			result := scope.ShouldReconcileKubeconfig(t.Context())
 			g.Expect(result).To(Equal(tc.expectedResult), tc.description)
 		})
 	}

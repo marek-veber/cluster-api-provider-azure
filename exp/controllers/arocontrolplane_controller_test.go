@@ -423,7 +423,7 @@ func TestAROControlPlaneReconciler_Reconcile(t *testing.T) {
 				},
 			}
 
-			result, err := reconciler.Reconcile(context.TODO(), req)
+			result, err := reconciler.Reconcile(t.Context(), req)
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -435,7 +435,7 @@ func TestAROControlPlaneReconciler_Reconcile(t *testing.T) {
 			if tc.validateResult != nil && tc.aroControlPlane != nil {
 				// Get the updated control plane
 				updatedCP := &cplane.AROControlPlane{}
-				err := fakeClient.Get(context.TODO(), client.ObjectKeyFromObject(tc.aroControlPlane), updatedCP)
+				err := fakeClient.Get(t.Context(), client.ObjectKeyFromObject(tc.aroControlPlane), updatedCP)
 				g.Expect(err).NotTo(HaveOccurred())
 				tc.validateResult(g, updatedCP)
 			}
@@ -511,7 +511,7 @@ func TestAROControlPlaneReconciler_clusterToAROControlPlane(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			requests := clusterToAROControlPlane(context.TODO(), tc.cluster)
+			requests := clusterToAROControlPlane(t.Context(), tc.cluster)
 			g.Expect(requests).To(Equal(tc.expectedRequests))
 		})
 	}
@@ -588,7 +588,7 @@ func TestAROControlPlaneReconciler_aroMachinePoolToAROControlPlane(t *testing.T)
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			requests := reconciler.aroMachinePoolToAROControlPlane(context.TODO(), tc.aroMachinePool)
+			requests := reconciler.aroMachinePoolToAROControlPlane(t.Context(), tc.aroMachinePool)
 			g.Expect(requests).To(Equal(tc.expectedRequests))
 		})
 	}
@@ -766,10 +766,10 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 				CredentialCache: credCacheMock,
 			}
 
-			aroScope, err := scope.NewAROControlPlaneScope(context.TODO(), scopeParams)
+			aroScope, err := scope.NewAROControlPlaneScope(t.Context(), scopeParams)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			result, err := reconciler.reconcileDelete(context.TODO(), aroScope)
+			result, err := reconciler.reconcileDelete(t.Context(), aroScope)
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -781,7 +781,7 @@ func TestAROControlPlaneReconciler_reconcileDelete(t *testing.T) {
 			if tc.validateResult != nil {
 				// Get the updated control plane
 				updatedCP := &cplane.AROControlPlane{}
-				err := fakeClient.Get(context.TODO(), client.ObjectKeyFromObject(tc.aroControlPlane), updatedCP)
+				err := fakeClient.Get(t.Context(), client.ObjectKeyFromObject(tc.aroControlPlane), updatedCP)
 				g.Expect(err).NotTo(HaveOccurred())
 				tc.validateResult(g, updatedCP)
 			}

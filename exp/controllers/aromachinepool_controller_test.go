@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -263,7 +262,7 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 				}
 			}
 
-			result, err := reconciler.Reconcile(context.Background(), tc.request)
+			result, err := reconciler.Reconcile(t.Context(), tc.request)
 
 			if tc.expectedError {
 				g.Expect(err).To(HaveOccurred())
@@ -276,7 +275,7 @@ func TestAROMachinePoolReconciler_Reconcile(t *testing.T) {
 			// Check finalizer state if machine pool exists
 			if tc.machinePoolExists {
 				var aroMP infrav2exp.AROMachinePool
-				err := fakeClient.Get(context.Background(), types.NamespacedName{
+				err := fakeClient.Get(t.Context(), types.NamespacedName{
 					Namespace: testNamespace,
 					Name:      testMachinePoolName,
 				}, &aroMP)
@@ -304,7 +303,7 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 			expectedError:  false,
 			validateResult: func(g *WithT, client client.Client, machinePoolName string) {
 				var aroMP infrav2exp.AROMachinePool
-				err := client.Get(context.Background(), types.NamespacedName{
+				err := client.Get(t.Context(), types.NamespacedName{
 					Namespace: testNamespace,
 					Name:      machinePoolName,
 				}, &aroMP)
@@ -433,7 +432,7 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 				return mockService, nil
 			}
 
-			result, err := reconciler.Reconcile(context.Background(), reconcile.Request{
+			result, err := reconciler.Reconcile(t.Context(), reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: testNamespace,
 					Name:      testMachinePoolName,

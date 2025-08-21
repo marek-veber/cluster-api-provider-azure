@@ -57,7 +57,7 @@ func PossibleCreatedByTypeValues() []CreatedByType {
 	}
 }
 
-// CustomerManagedEncryptionType - The encryption type used. By default, "kms" is used.
+// CustomerManagedEncryptionType - The encryption type used. By default, "KMS" is used.
 type CustomerManagedEncryptionType string
 
 const (
