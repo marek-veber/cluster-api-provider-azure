@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -153,6 +155,12 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return reconcile.Result{}, err
 	}
 
+	// Handle deletion early - before requiring owner references
+	// During deletion, the MachinePool may already be deleted
+	if !infraPool.DeletionTimestamp.IsZero() {
+		return ampr.reconcileDeleteWithoutScope(ctx, log, infraPool)
+	}
+
 	// Fetch the owning MachinePool.
 	ownerPool, err := controllers.GetOwnerMachinePool(ctx, ampr.Client, infraPool.ObjectMeta)
 	if err != nil {
@@ -237,11 +245,6 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if annotations.IsPaused(ownerCluster, infraPool) {
 		log.Info("AROMachinePool or linked Cluster is marked as paused. Won't reconcile normally")
 		return ampr.reconcilePause(ctx, acpScope)
-	}
-
-	// Handle deleted clusters
-	if !infraPool.DeletionTimestamp.IsZero() {
-		return ampr.reconcileDelete(ctx, acpScope)
 	}
 
 	// Handle non-deleted clusters
@@ -368,5 +371,33 @@ func (ampr *AROMachinePoolReconciler) reconcileDelete(ctx context.Context, scope
 		return reconcile.Result{}, err
 	}
 
+	return reconcile.Result{}, nil
+}
+
+// reconcileDeleteWithoutScope handles deletion when owner references may not be available.
+// This can happen when the MachinePool or Cluster has already been deleted.
+func (ampr *AROMachinePoolReconciler) reconcileDeleteWithoutScope(ctx context.Context, log logr.Logger, infraPool *infrav2exp.AROMachinePool) (reconcile.Result, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AROMachinePoolReconciler.reconcileDeleteWithoutScope")
+	defer done()
+
+	log.Info("Reconciling AROMachinePool delete without full scope")
+
+	// If the AROMachinePool is being deleted and we can't get the owner references,
+	// we'll just remove the finalizer. The Azure resources may have already been cleaned up
+	// when the cluster was deleted, or they'll be cleaned up by Azure's garbage collection.
+	// This prevents the AROMachinePool from being stuck in deletion when its owner is gone.
+
+	patchHelper, err := patch.NewHelper(infraPool, ampr.Client)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create patch helper")
+	}
+
+	controllerutil.RemoveFinalizer(infraPool, infrav2exp.AROMachinePoolFinalizer)
+
+	if err := patchHelper.Patch(ctx, infraPool); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to patch AROMachinePool")
+	}
+
+	log.Info("Successfully removed finalizer from AROMachinePool")
 	return reconcile.Result{}, nil
 }

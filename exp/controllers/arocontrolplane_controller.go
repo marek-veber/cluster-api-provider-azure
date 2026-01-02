@@ -28,7 +28,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -203,22 +202,11 @@ func (r *AROControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	patchHelper, err := patch.NewHelper(aroControlPlane, r.Client)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create patch helper: %w", err)
-	}
-	defer func() {
-		err := patchHelper.Patch(ctx, aroControlPlane)
-		if err != nil && resultErr == nil {
-			resultErr = err
-			result = ctrl.Result{}
-		}
-	}()
-
-	aroControlPlane.Status.Ready = false
-	if aroControlPlane.Status.Initialization == nil {
-		aroControlPlane.Status.Initialization = &cplane.AROControlPlaneInitializationStatus{ControlPlaneInitialized: false}
-	}
+	// Note: We don't set Ready=false here or create a patch helper at the controller level.
+	// The AROControlPlaneScope creates its own patch helper and handles all patching via Close().
+	// Setting Ready=false here would create a conflict when both patch helpers try to patch,
+	// causing the controller's patch to overwrite the scope's changes.
+	// The Ready status is properly set in reconcileNormal() based on the APIURL being populated.
 
 	// Get the cluster
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, aroControlPlane.ObjectMeta)

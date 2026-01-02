@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -305,8 +306,9 @@ func TestAROMachinePoolReconciler_reconcileDelete(t *testing.T) {
 					Namespace: testNamespace,
 					Name:      machinePoolName,
 				}, &aroMP)
-				g.Expect(err).NotTo(HaveOccurred())
-				// In a real scenario, finalizer would be removed, but fake client may not reflect this immediately
+				// After successful deletion with finalizer removed and DeletionTimestamp set,
+				// the fake client garbage collects the object, so it should not be found
+				g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "AROMachinePool should be deleted after finalizer removal")
 			},
 		},
 		// TODO: Fix deletion error tests - mock service integration needs work
