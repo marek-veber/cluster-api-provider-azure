@@ -183,6 +183,12 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	log = log.WithValues("ownerCluster", ownerCluster.Name)
 
+	// Check if ControlPlaneRef is defined
+	if !ownerCluster.Spec.ControlPlaneRef.IsDefined() {
+		log.Info("Cluster ControlPlaneRef is not yet defined")
+		return reconcile.Result{}, nil
+	}
+
 	// Fetch the corresponding control plane which has all the interesting data.
 	controlPlane := &cplane.AROControlPlane{}
 	controlPlaneName := client.ObjectKey{
@@ -196,7 +202,7 @@ func (ampr *AROMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Upon first create of an AKS service, the node pools are provided to the CreateOrUpdate call. After the initial
 	// create of the control plane and node pools, the control plane will transition to initialized. After the control
 	// plane is initialized, we can proceed to reconcile aro machine pools.
-	if !controlPlane.Status.Initialization.ControlPlaneInitialized {
+	if controlPlane.Status.Initialization == nil || !controlPlane.Status.Initialization.ControlPlaneInitialized {
 		log.Info("AROControlPlane is not initialized")
 		return reconcile.Result{}, nil
 	}
