@@ -240,6 +240,10 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 	}
 
 	if err := cli.Get(ctx, key, ownerCluster); err != nil {
+		// If the cluster doesn't exist, allow deletion
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -260,6 +264,10 @@ func validateLastSystemNodePool(cli client.Client, labels map[string]string, nam
 
 	ammpList := &AROMachinePoolList{}
 	if err := cli.List(ctx, ammpList, opt1, opt2); err != nil {
+		// If listing fails, allow deletion (cluster might be in deletion state)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
