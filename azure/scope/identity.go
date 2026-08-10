@@ -192,7 +192,7 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 	if p.hasClientSecret() {
 		secretRef := p.Identity.Spec.ClientSecret
 		key := types.NamespacedName{
-			Namespace: secretRef.Namespace,
+			Namespace: p.Identity.Namespace,
 			Name:      secretRef.Name,
 		}
 		secret := &corev1.Secret{}

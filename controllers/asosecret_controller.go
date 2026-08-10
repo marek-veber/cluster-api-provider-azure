@@ -303,7 +303,7 @@ func (asos *ASOSecretReconciler) createSecretFromClusterIdentity(ctx context.Con
 	} else {
 		// Fetch identity secret, if it exists
 		key = types.NamespacedName{
-			Namespace: identity.Spec.ClientSecret.Namespace,
+			Namespace: identity.Namespace,
 			Name:      identity.Spec.ClientSecret.Name,
 		}
 		identitySecret := &corev1.Secret{}

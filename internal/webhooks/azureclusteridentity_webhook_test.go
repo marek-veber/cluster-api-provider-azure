@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -79,6 +81,53 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with clientSecret in same namespace",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name:      "my-secret",
+						Namespace: "default",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with clientSecret empty namespace",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name: "my-secret",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with clientSecret in different namespace",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipal,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					ClientSecret: corev1.SecretReference{
+						Name:      "my-secret",
+						Namespace: "kube-system",
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 

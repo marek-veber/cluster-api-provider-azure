@@ -35,6 +35,10 @@ func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Wa
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential", c.Spec.UserAssignedIdentityCredentialsPath)))
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential ", c.Spec.UserAssignedIdentityCredentialsCloudType)))
 	}
+	if c.Spec.ClientSecret.Namespace != "" && c.Spec.ClientSecret.Namespace != c.Namespace {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "clientSecret", "namespace"),
+			c.Spec.ClientSecret.Namespace, "must be empty or equal to the AzureClusterIdentity namespace"))
+	}
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
