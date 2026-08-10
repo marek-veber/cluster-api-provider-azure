@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
@@ -79,6 +80,73 @@ func TestAzureClusterIdentity_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with certPath under allowed dir",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					CertPath: "/var/run/secrets/azure/client-cert.pem",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with certPath outside allowed dir",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					CertPath: "/etc/shadow",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity with certPath traversal attack",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:     infrav1.ServicePrincipalCertificate,
+					ClientID: fakeClientID,
+					TenantID: fakeTenantID,
+					CertPath: "/var/run/secrets/azure/../../etc/passwd",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azureclusteridentity with userAssignedIdentityCredentialsPath under allowed dir",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:                                   infrav1.UserAssignedIdentityCredential,
+					ClientID:                               fakeClientID,
+					TenantID:                                fakeTenantID,
+					UserAssignedIdentityCredentialsPath:     "/var/run/secrets/azure/creds.json",
+					UserAssignedIdentityCredentialsCloudType: "AzurePublicCloud",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "azureclusteridentity with userAssignedIdentityCredentialsPath outside allowed dir",
+			clusterIdentity: &infrav1.AzureClusterIdentity{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+				Spec: infrav1.AzureClusterIdentitySpec{
+					Type:                                   infrav1.UserAssignedIdentityCredential,
+					ClientID:                               fakeClientID,
+					TenantID:                                fakeTenantID,
+					UserAssignedIdentityCredentialsPath:     "/var/run/secrets/kubernetes.io/serviceaccount/token",
+					UserAssignedIdentityCredentialsCloudType: "AzurePublicCloud",
+				},
+			},
+			wantErr: true,
 		},
 	}
 

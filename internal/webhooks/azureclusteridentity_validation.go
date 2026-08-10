@@ -18,6 +18,8 @@ package webhooks
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -25,6 +27,8 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
+
+var allowedCertDirs = []string{"/var/run/secrets/azure/"}
 
 func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Warnings, error) {
 	var allErrs field.ErrorList
@@ -35,8 +39,30 @@ func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Wa
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential", c.Spec.UserAssignedIdentityCredentialsPath)))
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential ", c.Spec.UserAssignedIdentityCredentialsCloudType)))
 	}
+	if c.Spec.CertPath != "" {
+		if !isPathAllowed(c.Spec.CertPath) {
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "certPath"),
+				"certPath must reference a file under an operator-managed mount (/var/run/secrets/azure/)"))
+		}
+	}
+	if c.Spec.UserAssignedIdentityCredentialsPath != "" {
+		if !isPathAllowed(c.Spec.UserAssignedIdentityCredentialsPath) {
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"),
+				"userAssignedIdentityCredentialsPath must reference a file under an operator-managed mount (/var/run/secrets/azure/)"))
+		}
+	}
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
 	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
+}
+
+func isPathAllowed(path string) bool {
+	clean := filepath.Clean(path)
+	for _, dir := range allowedCertDirs {
+		if strings.HasPrefix(clean, dir) {
+			return true
+		}
+	}
+	return false
 }
