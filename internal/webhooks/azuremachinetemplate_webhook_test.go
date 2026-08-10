@@ -156,6 +156,16 @@ func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
 			wantErr:         true,
 		},
 		{
+			name:            "azuremachinetemplate with dangerous CustomScript extension",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithVMExtension("Microsoft.Azure.Extensions", "CustomScript", "v1.10")),
+			wantErr:         true,
+		},
+		{
+			name:            "azuremachinetemplate with safe extension",
+			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithVMExtension("Microsoft.Azure.Monitor", "AzureMonitorLinuxAgent", "v1.0")),
+			wantErr:         false,
+		},
+		{
 			name:            "azuremachinetemplate without RoleAssignmentName",
 			machineTemplate: createAzureMachineTemplateFromMachine(createMachineWithoutRoleAssignmentName()),
 			wantErr:         false,

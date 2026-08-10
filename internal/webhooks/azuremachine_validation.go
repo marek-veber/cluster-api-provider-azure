@@ -19,6 +19,7 @@ package webhooks
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/google/uuid"
@@ -427,12 +428,34 @@ func ValidateCapacityReservationGroupID(capacityReservationGroupID *string, fldP
 	return allErrs
 }
 
+// dangerousVMExtensions maps publishers to extension types (the Name field maps to
+// Azure ARM's Type) that enable arbitrary code execution on provisioned VMs.
+var dangerousVMExtensions = map[string][]string{
+	"microsoft.azure.extensions": {"customscript"},
+	"microsoft.compute":          {"customscriptextension"},
+}
+
 // ValidateVMExtensions validates the VMExtensions spec.
-func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []infrav1.VMExtension, _ *field.Path) field.ErrorList {
+func ValidateVMExtensions(disableExtensionOperations *bool, vmExtensions []infrav1.VMExtension, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
+	if fldPath == nil {
+		fldPath = field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions")
+	}
+
 	if ptr.Deref(disableExtensionOperations, false) && len(vmExtensions) > 0 {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
+		allErrs = append(allErrs, field.Forbidden(fldPath, "VMExtensions must be empty when DisableExtensionOperations is true"))
+	}
+
+	for i, ext := range vmExtensions {
+		if dangerousTypes, ok := dangerousVMExtensions[strings.ToLower(ext.Publisher)]; ok {
+			for _, dt := range dangerousTypes {
+				if strings.EqualFold(ext.Name, dt) {
+					allErrs = append(allErrs, field.Forbidden(fldPath.Index(i),
+						fmt.Sprintf("VM extension publisher %q with type %q enables arbitrary code execution and is not allowed", ext.Publisher, ext.Name)))
+				}
+			}
+		}
 	}
 
 	return allErrs

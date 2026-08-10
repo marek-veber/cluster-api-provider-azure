@@ -250,6 +250,26 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithDisableExtenionOperationsAndHasExtension(),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with dangerous CustomScript extension",
+			machine: createMachineWithVMExtension("Microsoft.Azure.Extensions", "CustomScript", "v1.10"),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with dangerous CustomScriptExtension",
+			machine: createMachineWithVMExtension("Microsoft.Compute", "CustomScriptExtension", "v1.10"),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with dangerous extension case-insensitive",
+			machine: createMachineWithVMExtension("microsoft.azure.extensions", "customscript", "v1.10"),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with safe extension",
+			machine: createMachineWithVMExtension("Microsoft.Azure.Monitor", "AzureMonitorLinuxAgent", "v1.0"),
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1289,6 +1309,20 @@ func createMachineWithDisableExtenionOperations() *infrav1.AzureMachine {
 			SSHPublicKey:               validSSHPublicKey,
 			OSDisk:                     validOSDisk,
 			DisableExtensionOperations: ptr.To(true),
+		},
+	}
+}
+
+func createMachineWithVMExtension(publisher, name, version string) *infrav1.AzureMachine {
+	return &infrav1.AzureMachine{
+		Spec: infrav1.AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+			VMExtensions: []infrav1.VMExtension{{
+				Name:      name,
+				Publisher: publisher,
+				Version:   version,
+			}},
 		},
 	}
 }
