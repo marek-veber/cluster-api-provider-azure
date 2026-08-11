@@ -30,6 +30,8 @@ spec:
           imagePullPolicy: Always
           name: manager
           volumeMounts:
+            - mountPath: /tmp
+              name: tmp
             - mountPath: /var/run/secrets/azure/tokens
               name: azure-identity-token
               readOnly: true
@@ -74,6 +76,7 @@ spec:
             capabilities:
               drop:
               - ALL
+            readOnlyRootFilesystem: true
             runAsUser: 65532
             runAsGroup: 65532
       securityContext:
@@ -88,6 +91,8 @@ spec:
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
       volumes:
+      - name: tmp
+        emptyDir: {}
       - name: azure-identity-token
         projected:
           defaultMode: 420

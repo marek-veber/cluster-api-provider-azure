@@ -46,7 +46,7 @@ type AzureASOManagedControlPlaneWebhook struct {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *AzureASOManagedControlPlaneWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	_, ok := obj.(*infrav1.AzureASOManagedControlPlane)
+	c, ok := obj.(*infrav1.AzureASOManagedControlPlane)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureASOManagedControlPlane")
 	}
@@ -56,11 +56,29 @@ func (ampw *AzureASOManagedControlPlaneWebhook) ValidateCreate(_ context.Context
 			fmt.Sprintf("can be set only if the %s feature flag is enabled", feature.ASOAPI),
 		)
 	}
+	if errs := validateASOResourceGVKs(c.Spec.Resources, field.NewPath("spec", "resources")); len(errs) > 0 {
+		return nil, apierrors.NewInvalid(
+			infrav1.GroupVersion.WithKind("AzureASOManagedControlPlane").GroupKind(),
+			c.Name,
+			errs,
+		)
+	}
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *AzureASOManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+func (ampw *AzureASOManagedControlPlaneWebhook) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
+	c, ok := newObj.(*infrav1.AzureASOManagedControlPlane)
+	if !ok {
+		return nil, apierrors.NewBadRequest("expected an AzureASOManagedControlPlane")
+	}
+	if errs := validateASOResourceGVKs(c.Spec.Resources, field.NewPath("spec", "resources")); len(errs) > 0 {
+		return nil, apierrors.NewInvalid(
+			infrav1.GroupVersion.WithKind("AzureASOManagedControlPlane").GroupKind(),
+			c.Name,
+			errs,
+		)
+	}
 	return nil, nil
 }
 

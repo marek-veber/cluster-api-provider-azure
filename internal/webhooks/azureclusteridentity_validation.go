@@ -18,6 +18,7 @@ package webhooks
 
 import (
 	"fmt"
+	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -35,8 +36,13 @@ func validateAzureClusterIdentity(c *infrav1.AzureClusterIdentity) (admission.Wa
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsPath"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential", c.Spec.UserAssignedIdentityCredentialsPath)))
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "userAssignedIdentityCredentialsCloudType"), fmt.Sprintf("%s can only be set when AzureClusterIdentity is of type UserAssignedIdentityCredential ", c.Spec.UserAssignedIdentityCredentialsCloudType)))
 	}
-	if len(allErrs) == 0 {
-		return nil, nil
+	var warnings admission.Warnings
+	if c.Spec.AllowedNamespaces != nil && reflect.DeepEqual(*c.Spec.AllowedNamespaces, infrav1.AllowedNamespaces{}) {
+		warnings = append(warnings, fmt.Sprintf("AzureClusterIdentity %s has an empty allowedNamespaces field, which allows access from all namespaces", c.Name))
 	}
-	return nil, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
+
+	if len(allErrs) == 0 {
+		return warnings, nil
+	}
+	return warnings, apierrors.NewInvalid(infrav1.GroupVersion.WithKind(infrav1.AzureClusterIdentityKind).GroupKind(), c.Name, allErrs)
 }

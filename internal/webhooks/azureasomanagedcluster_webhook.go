@@ -46,7 +46,7 @@ type AzureASOManagedClusterWebhook struct {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	_, ok := obj.(*infrav1.AzureASOManagedCluster)
+	c, ok := obj.(*infrav1.AzureASOManagedCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest("expected an AzureASOManagedCluster")
 	}
@@ -56,11 +56,29 @@ func (ampw *AzureASOManagedClusterWebhook) ValidateCreate(_ context.Context, obj
 			fmt.Sprintf("can be set only if the %s feature flag is enabled", feature.ASOAPI),
 		)
 	}
+	if errs := validateASOResourceGVKs(c.Spec.Resources, field.NewPath("spec", "resources")); len(errs) > 0 {
+		return nil, apierrors.NewInvalid(
+			infrav1.GroupVersion.WithKind("AzureASOManagedCluster").GroupKind(),
+			c.Name,
+			errs,
+		)
+	}
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (ampw *AzureASOManagedClusterWebhook) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
+func (ampw *AzureASOManagedClusterWebhook) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
+	c, ok := newObj.(*infrav1.AzureASOManagedCluster)
+	if !ok {
+		return nil, apierrors.NewBadRequest("expected an AzureASOManagedCluster")
+	}
+	if errs := validateASOResourceGVKs(c.Spec.Resources, field.NewPath("spec", "resources")); len(errs) > 0 {
+		return nil, apierrors.NewInvalid(
+			infrav1.GroupVersion.WithKind("AzureASOManagedCluster").GroupKind(),
+			c.Name,
+			errs,
+		)
+	}
 	return nil, nil
 }
 

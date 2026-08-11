@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  podSelector:
+    matchLabels:
+      control-plane: capz-controller-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    # Webhook traffic from kube-apiserver
+    - ports:
+        - protocol: TCP
+          port: 9443
+    # Metrics scraping from monitoring namespaces
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: monitoring
+      ports:
+        - protocol: TCP
+          port: 8443
+    # Health probes (kubelet)
+    - ports:
+        - protocol: TCP
+          port: 9440
