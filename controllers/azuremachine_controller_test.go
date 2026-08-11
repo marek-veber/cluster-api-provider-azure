@@ -634,9 +634,10 @@ func getFakeAzureClusterIdentity(changes ...func(*infrav1.AzureClusterIdentity))
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type:     infrav1.ServicePrincipal,
-			ClientID: "fake-client-id",
-			TenantID: "fake-tenant-id",
+			Type:              infrav1.ServicePrincipal,
+			ClientID:          "fake-client-id",
+			TenantID:          "fake-tenant-id",
+			AllowedNamespaces: &infrav1.AllowedNamespaces{},
 		},
 	}
 

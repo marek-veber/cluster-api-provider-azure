@@ -76,6 +76,11 @@ func NewAzureCredentialsProvider(ctx context.Context, cache azure.CredentialCach
 		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
 	}
 
+	if !IsClusterNamespaceAllowed(ctx, kubeClient, identity.Spec.AllowedNamespaces, defaultNamespace) {
+		return nil, errors.Errorf("AzureClusterIdentity %s/%s does not allow namespace %s",
+			identity.Namespace, identity.Name, defaultNamespace)
+	}
+
 	return &AzureCredentialsProvider{
 		Client:   kubeClient,
 		Identity: identity,

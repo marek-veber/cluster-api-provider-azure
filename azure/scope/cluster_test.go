@@ -109,9 +109,10 @@ func TestNewClusterScope(t *testing.T) {
 
 	fakeIdentity := &infrav1.AzureClusterIdentity{
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type:     infrav1.ServicePrincipal,
-			ClientID: fakeClientID,
-			TenantID: fakeTenantID,
+			Type:              infrav1.ServicePrincipal,
+			ClientID:          fakeClientID,
+			TenantID:          fakeTenantID,
+			AllowedNamespaces: &infrav1.AllowedNamespaces{},
 		},
 	}
 	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}

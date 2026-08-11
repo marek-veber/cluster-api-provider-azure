@@ -264,6 +264,7 @@ func TestAzureClusterReconcilePaused(t *testing.T) {
 		Spec: infrav1.AzureClusterIdentitySpec{
 			Type:     infrav1.ServicePrincipal,
 			TenantID: "fake-tenantid",
+			AllowedNamespaces: &infrav1.AllowedNamespaces{},
 		},
 	}
 	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
@@ -480,6 +481,7 @@ func getClusterReconcileInputs(tc TestClusterReconcileInput) (*AzureClusterRecon
 		Spec: infrav1.AzureClusterIdentitySpec{
 			Type:     infrav1.ServicePrincipal,
 			TenantID: "fake-tenantid",
+			AllowedNamespaces: &infrav1.AllowedNamespaces{},
 		},
 	}
 	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}

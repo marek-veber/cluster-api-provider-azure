@@ -177,10 +177,11 @@ func TestGetCloudProviderConfig(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: infrav1.AzureClusterIdentitySpec{
-					Type:         infrav1.ServicePrincipal,
-					ClientID:     "fooClient",
-					TenantID:     "fooTenant",
-					ClientSecret: corev1.SecretReference{Name: "fooSecret", Namespace: "default"},
+					Type:              infrav1.ServicePrincipal,
+					ClientID:          "fooClient",
+					TenantID:          "fooTenant",
+					ClientSecret:      corev1.SecretReference{Name: "fooSecret", Namespace: "default"},
+					AllowedNamespaces: &infrav1.AllowedNamespaces{},
 				},
 			}
 			fakeSecret := getASOSecret(tc.cluster, func(s *corev1.Secret) {
@@ -311,8 +312,9 @@ func TestReconcileAzureSecret(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: infrav1.AzureClusterIdentitySpec{
-			Type:     infrav1.ServicePrincipal,
-			TenantID: "fake-tenantid",
+			Type:              infrav1.ServicePrincipal,
+			TenantID:          "fake-tenantid",
+			AllowedNamespaces: &infrav1.AllowedNamespaces{},
 		},
 	}
 	fakeSecret := &corev1.Secret{Data: map[string][]byte{"clientSecret": []byte("fooSecret")}}
